@@ -1,1 +1,10 @@
 README
+
+npm install --save-dev @types/react @types/node
+npm install lucide-react
+npm install recharts
+pip install fastapi uvicorn anthropic python-multipart
+npm install @anthropic-ai/sdk
+npm install @supabase/supabase-js
+npm install uuid
+npm install --save-dev @types/uuid

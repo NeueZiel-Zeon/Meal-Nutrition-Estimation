@@ -9,12 +9,14 @@ import { MealAnalysis } from "@/components/MealAnalysis";
 import { ImageUpload } from "@/components/ImageUpload";
 import { ChatInterface } from "@/components/ChatInterface";
 import { AnalysisResults } from "@/types/analysis";
+import { analyzeImage } from "@/lib/analyze-image";
 
 export default function Home() {
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisResults, setAnalysisResults] = useState<AnalysisResults | null>(null);
+  const [activeTab, setActiveTab] = useState("upload");
 
   const handleImageSelect = (file: File) => {
     setSelectedImage(file);
@@ -26,32 +28,24 @@ export default function Home() {
     if (!selectedImage) return;
     
     setIsAnalyzing(true);
-    // TODO: Implement actual image analysis
-    const mockResults: AnalysisResults = {
-      calories: 650,
-      nutrients: {
-        protein: 25,
-        carbs: 85,
-        fat: 22
-      },
-      vitamins: {
-        vitaminA: 15,
-        vitaminC: 45,
-        vitaminD: 10
-      }
-    };
-
-    setTimeout(() => {
-      setAnalysisResults(mockResults);
+    
+    try {
+      const results = await analyzeImage(selectedImage);
+      setAnalysisResults(results);
+      setActiveTab("analysis");
+    } catch (error) {
+      console.error('分析エラー:', error);
+      // TODO: エラー表示を追加
+    } finally {
       setIsAnalyzing(false);
-    }, 1500);
+    }
   };
 
   return (
     <div className="container mx-auto px-4 py-8">
       <h1 className="text-4xl font-bold text-center mb-8">食事分析システム</h1>
       
-      <Tabs defaultValue="upload" className="max-w-4xl mx-auto">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="max-w-4xl mx-auto">
         <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="upload">画像アップロード</TabsTrigger>
           <TabsTrigger value="analysis" disabled={!analysisResults}>

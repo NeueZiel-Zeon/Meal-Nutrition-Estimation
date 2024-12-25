@@ -11,9 +11,33 @@ export interface VitaminData {
 }
 
 export interface AnalysisResults {
+  foodItems: string[];
   calories: number;
-  nutrients: NutrientData;
-  vitamins: VitaminData;
+  portions: {
+    [key: string]: number;
+  };
+  nutrients: {
+    protein: number;
+    fat: number;
+    carbs: number;
+    vitamins: {
+      vitaminA: number;
+      vitaminB: number;
+      vitaminC: number;
+      vitaminD: number;
+      vitaminE: number;
+    };
+    minerals: {
+      calcium: number;
+      iron: number;
+      potassium: number;
+      magnesium: number;
+      zinc: number;
+    };
+  };
+  deficientNutrients: string[];
+  excessiveNutrients: string[];
+  improvements: string[];
 }
 
 export interface Message {

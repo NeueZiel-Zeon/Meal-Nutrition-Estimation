@@ -7,9 +7,9 @@ export function formatAnalysisContext(results: AnalysisResults): string {
 - タンパク質: ${results.nutrients.protein}g
 - 炭水化物: ${results.nutrients.carbs}g
 - 脂質: ${results.nutrients.fat}g
-- ビタミンA: ${results.vitamins.vitaminA}%
-- ビタミンC: ${results.vitamins.vitaminC}%
-- ビタミンD: ${results.vitamins.vitaminD}%
+- ビタミンA: ${results.nutrients.vitamins.vitaminA}%
+- ビタミンC: ${results.nutrients.vitamins.vitaminC}%
+- ビタミンD: ${results.nutrients.vitamins.vitaminD}%
 `.trim();
 }
 
