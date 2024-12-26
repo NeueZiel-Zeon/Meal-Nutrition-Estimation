@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Send } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -10,7 +10,7 @@ import { AnalysisResults, Message } from "@/types/analysis";
 import { generateAIResponse } from "@/lib/chat-utils";
 
 interface ChatInterfaceProps {
-  analysisResults: AnalysisResults;
+  analysisResults: string;
 }
 
 export function ChatInterface({ analysisResults }: ChatInterfaceProps) {
@@ -33,7 +33,7 @@ export function ChatInterface({ analysisResults }: ChatInterfaceProps) {
     setIsLoading(true);
 
     try {
-      const response = await generateAIResponse(input, analysisResults);
+      const response = await generateAIResponse(input, analysisResults, 'chat');
       const aiMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: "assistant",
@@ -66,7 +66,9 @@ export function ChatInterface({ analysisResults }: ChatInterfaceProps) {
                     : "bg-muted"
                 }`}
               >
-                {message.content}
+                <pre className="whitespace-pre-wrap break-words font-sans">
+                  {message.content}
+                </pre>
               </div>
             </div>
           ))}

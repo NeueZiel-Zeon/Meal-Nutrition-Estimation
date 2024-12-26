@@ -103,11 +103,12 @@ export async function POST(request: Request) {
 
       console.log('Claude Response:', JSON.stringify(response, null, 2));
 
-      if (!response.content || !response.content[0]?.text) {
-        throw new Error('Invalid response format from Claude API');
+      const textContent = response.content.find(c => c.type === 'text');
+      if (!textContent || !('text' in textContent)) {
+        throw new Error('Invalid response format');
       }
 
-      const content = response.content[0].text;
+      const content = textContent.text;
       console.log('Parsed content:', content);
 
       const analysisResults = JSON.parse(content);

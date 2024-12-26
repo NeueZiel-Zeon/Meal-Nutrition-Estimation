@@ -10,9 +10,6 @@ export async function analyzeImage(file: File): Promise<AnalysisResults> {
     const response = await fetch('/api/analyze', {
       method: 'POST',
       body: formData,
-      headers: {
-        'Accept': 'application/json',
-      },
     });
 
     if (!response.ok) {
@@ -37,4 +34,34 @@ export async function getPastAnalyses() {
 
   if (error) throw error;
   return data;
+}
+
+export async function getImageContext(file: File): Promise<string> {
+  try {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    console.log('Sending file to chat API:', file.name, file.type);
+
+    const response = await fetch('/api/chat', {
+      method: 'POST',
+      body: formData,
+      cache: 'no-store',
+      signal: AbortSignal.timeout(30000)
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Chat API Error:', errorText);
+      throw new Error('画像の説明取得に失敗しました');
+    }
+
+    const data = await response.json();
+    console.log('Received context:', data.imageContext);
+
+    return data.imageContext;
+  } catch (error) {
+    console.error('Error getting image context:', error);
+    throw error;
+  }
 } 

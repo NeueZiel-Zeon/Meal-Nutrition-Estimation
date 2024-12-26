@@ -1,30 +1,53 @@
 import { AnalysisResults, Message } from "@/types/analysis";
 
-export function formatAnalysisContext(results: AnalysisResults): string {
-  return `
-栄養分析結果:
-- 総カロリー: ${results.calories}kcal
-- タンパク質: ${results.nutrients.protein}g
-- 炭水化物: ${results.nutrients.carbs}g
-- 脂質: ${results.nutrients.fat}g
-- ビタミンA: ${results.nutrients.vitamins.vitaminA}%
-- ビタミンC: ${results.nutrients.vitamins.vitaminC}%
-- ビタミンD: ${results.nutrients.vitamins.vitaminD}%
-`.trim();
-}
+export async function generateAIResponse(
+  message: string, 
+  analysisResults: AnalysisResults | File | string,
+  mode: 'analyze' | 'chat' = 'chat'
+): Promise<string> {
+  try {
+    const formData = new FormData();
 
-export function generateAIResponse(message: string, context: AnalysisResults): Promise<string> {
-  // TODO: 実際のAI APIと連携
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      const responses = [
-        `分析結果によると、この食事は${context.calories}kcalです。タンパク質が${context.nutrients.protein}gと適度に含まれていますが、炭水化物が${context.nutrients.carbs}gとやや多めです。`,
-        "バランスの良い食事のために、野菜を増やすことをお勧めします。",
-        "ビタミンCの含有量が良好ですが、ビタミンDを補うために魚類を取り入れることを検討してください。"
-      ];
-      resolve(responses[Math.floor(Math.random() * responses.length)]);
-    }, 1000);
-  });
+    // 分析モード - 画像から食事内容の説明を取得
+    if (mode === 'analyze' && analysisResults instanceof File) {
+      formData.append('file', analysisResults);
+      
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error('APIリクエストに失敗しました');
+      }
+
+      const data = await response.json();
+      return data.imageContext; // 画像の分析結果テキストを返す
+    }
+
+    // チャットモード
+    if (mode === 'chat') {
+      formData.append('message', message);
+      formData.append('imageContext', analysisResults.toString());
+
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error('APIリクエストに失敗しました');
+      }
+
+      const data = await response.json();
+      return data.response;
+    }
+
+    throw new Error('無効なリクエストモードです');
+  } catch (error) {
+    console.error('Error generating AI response:', error);
+    throw error;
+  }
 }
 
 export function exportChatHistory(messages: Message[]): string {
