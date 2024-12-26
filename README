@@ -8,3 +8,5 @@ npm install @anthropic-ai/sdk
 npm install @supabase/supabase-js
 npm install uuid
 npm install --save-dev @types/uuid
+npm install react-icons lucide-react
+npm install @supabase/auth-helpers-nextjs
