@@ -273,7 +273,7 @@ export function MealAnalysis({ results }: MealAnalysisProps) {
 
   // 栄養素の割合を計算（全てグラム単位で統一）
   const nutrientData = [
-    { name: "タンパク��", value: results.nutrients.protein, color: "#0088FE" },
+    { name: "タンパク質", value: results.nutrients.protein, color: "#0088FE" },
     { name: "脂質", value: results.nutrients.fat, color: "#00C49F" },
     { name: "炭水化物", value: results.nutrients.carbs, color: "#FFBB28" },
     { 
