@@ -10,3 +10,6 @@ npm install uuid
 npm install --save-dev @types/uuid
 npm install react-icons lucide-react
 npm install @supabase/auth-helpers-nextjs
+npm install @supabase/auth-helpers-nextjs @supabase/supabase-js sonner
+npm install @radix-ui/react-toast
+npm install @supabase/auth-helpers-react

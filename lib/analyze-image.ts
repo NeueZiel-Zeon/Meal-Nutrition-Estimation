@@ -1,5 +1,5 @@
 import { AnalysisResults } from "@/types/analysis";
-import { supabase } from "@/lib/supabase";
+import { supabaseClient } from '@/lib/supabase/client';
 import { v4 as uuidv4 } from 'uuid';
 
 export async function analyzeImage(file: File): Promise<AnalysisResults> {
@@ -27,7 +27,7 @@ export async function analyzeImage(file: File): Promise<AnalysisResults> {
 }
 
 export async function getPastAnalyses() {
-  const { data, error } = await supabase
+  const { data, error } = await supabaseClient
     .from('meal_analyses')
     .select('*')
     .order('created_at', { ascending: false });

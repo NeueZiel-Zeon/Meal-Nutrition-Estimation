@@ -1,6 +1,6 @@
 "use client";
 
-import { Upload } from "lucide-react";
+import { Upload, LogOut } from "lucide-react";
 import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -11,8 +11,15 @@ import { ChatInterface } from "@/components/ChatInterface";
 import { AnalysisResults } from "@/types/analysis";
 import { analyzeImage, getImageContext } from "@/lib/analyze-image";
 import { generateAIResponse } from "@/lib/chat-utils";
+import { getServerClient } from '@/lib/supabase/server';
+import { useRouter } from "next/navigation";
+import { useSupabase } from "@/components/providers/SupabaseProvider";
+import { useToast } from "@/components/ui/use-toast";
 
 export default function Home() {
+  const router = useRouter();
+  const { supabase } = useSupabase();
+  const { toast } = useToast();
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [imageBase64, setImageBase64] = useState<string | null>(null);
@@ -59,8 +66,40 @@ export default function Home() {
     }
   };
 
+  const handleLogout = async () => {
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
+
+      toast({
+        title: "ログアウト成功",
+        description: "ログイン画面に戻ります",
+      });
+
+      router.push("/auth/login");
+    } catch (error: any) {
+      toast({
+        title: "エラー",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
     <div className="container mx-auto px-4 py-8">
+      <div className="absolute top-4 right-4">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handleLogout}
+          className="flex items-center gap-2"
+        >
+          <LogOut className="h-4 w-4" />
+          ログアウト
+        </Button>
+      </div>
+
       <h1 className="text-4xl font-bold text-center mb-8">食事分析システム</h1>
       
       <Tabs value={activeTab} onValueChange={setActiveTab} className="max-w-4xl mx-auto">

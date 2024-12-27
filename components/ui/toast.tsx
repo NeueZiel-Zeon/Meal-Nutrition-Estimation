@@ -4,7 +4,6 @@ import * as React from 'react';
 import * as ToastPrimitives from '@radix-ui/react-toast';
 import { cva, type VariantProps } from 'class-variance-authority';
 import { X } from 'lucide-react';
-
 import { cn } from '@/lib/utils';
 
 const ToastProvider = ToastPrimitives.Provider;
@@ -112,7 +111,13 @@ const ToastDescription = React.forwardRef<
 ));
 ToastDescription.displayName = ToastPrimitives.Description.displayName;
 
-type ToastProps = React.ComponentPropsWithoutRef<typeof Toast>;
+type ToastProps = React.ComponentPropsWithoutRef<typeof Toast> & {
+  id?: string;
+  title?: string;
+  description?: string;
+  action?: ToastActionElement;
+  variant?: "default" | "destructive";
+};
 
 type ToastActionElement = React.ReactElement<typeof ToastAction>;
 
@@ -127,3 +132,21 @@ export {
   ToastClose,
   ToastAction,
 };
+
+export function useToast() {
+  const [toasts, setToasts] = React.useState<ToastProps[]>([]);
+
+  function toast({ ...props }: ToastProps) {
+    setToasts((prevToasts) => [...prevToasts, { ...props }]);
+  }
+
+  function dismissToast(id: string) {
+    setToasts((prevToasts) => prevToasts.filter((toast) => toast.id !== id));
+  }
+
+  return {
+    toast,
+    dismissToast,
+    toasts,
+  };
+}
