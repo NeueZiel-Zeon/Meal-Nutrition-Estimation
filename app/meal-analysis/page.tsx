@@ -15,15 +15,21 @@ import { generateAIResponse } from "@/lib/chat-utils";
 export default function Home() {
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [imageBase64, setImageBase64] = useState<string | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisResults, setAnalysisResults] = useState<AnalysisResults | null>(null);
   const [imageContext, setImageContext] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState("upload");
 
-  const handleImageSelect = (file: File) => {
+  const handleImageSelect = async (file: File) => {
     setSelectedImage(file);
     const url = URL.createObjectURL(file);
     setPreviewUrl(url);
+
+    // 画像をBase64に変換して保存
+    const bytes = await file.arrayBuffer();
+    const base64 = Buffer.from(bytes).toString('base64');
+    setImageBase64(base64);
   };
 
   const handleAnalyze = async () => {
@@ -93,7 +99,10 @@ export default function Home() {
 
         <TabsContent value="chat">
           {imageContext && (
-            <ChatInterface analysisResults={imageContext} />
+            <ChatInterface 
+              analysisResults={imageContext}
+              imageData={imageBase64}
+            />
           )}
         </TabsContent>
       </Tabs>

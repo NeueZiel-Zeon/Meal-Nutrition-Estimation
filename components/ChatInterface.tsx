@@ -11,9 +11,10 @@ import { generateAIResponse } from "@/lib/chat-utils";
 
 interface ChatInterfaceProps {
   analysisResults: string;
+  imageData: string | null | undefined;
 }
 
-export function ChatInterface({ analysisResults }: ChatInterfaceProps) {
+export function ChatInterface({ analysisResults, imageData }: ChatInterfaceProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -33,7 +34,11 @@ export function ChatInterface({ analysisResults }: ChatInterfaceProps) {
     setIsLoading(true);
 
     try {
-      const response = await generateAIResponse(input, analysisResults, 'chat');
+      const response = await generateAIResponse(input, {
+        context: analysisResults,
+        imageData: imageData || undefined
+      }, 'chat');
+      
       const aiMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: "assistant",

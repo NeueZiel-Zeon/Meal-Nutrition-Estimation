@@ -162,8 +162,107 @@ const RDI = {
   }
 } as const;
 
+// 栄養素の分類定義
+const NUTRIENT_CATEGORIES = {
+  fatSolubleVitamins: {
+    title: '脂溶性ビタミン',
+    nutrients: ['vitaminA', 'vitaminD', 'vitaminE', 'vitaminK']
+  },
+  waterSolubleVitamins: {
+    title: '水溶性ビタミン',
+    nutrients: ['vitaminB1', 'vitaminB2', 'vitaminB3', 'vitaminB5', 'vitaminB6', 'vitaminB7', 'vitaminB9', 'vitaminB12', 'vitaminC']
+  },
+  macroMinerals: {
+    title: '多量ミネラル',
+    nutrients: ['calcium', 'magnesium', 'phosphorus', 'potassium', 'sodium', 'chloride']
+  },
+  traceMinerals: {
+    title: '微量ミネラル',
+    nutrients: ['chromium', 'copper', 'fluoride', 'iodine', 'iron', 'manganese', 'molybdenum', 'selenium', 'zinc']
+  }
+};
+
+// 栄養素表示コンポーネント
+const NutrientCategory = ({ title, nutrients, results, gender }: {
+  title: string;
+  nutrients: string[];
+  results: AnalysisResults;
+  gender: 'male' | 'female';
+}) => (
+  <div className="mb-6">
+    <h3 className="font-medium text-lg mb-3">{title}</h3>
+    <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+      {nutrients.map(name => {
+        const value = results.nutrients.vitamins[name as keyof typeof results.nutrients.vitamins] ||
+                     results.nutrients.minerals[name as keyof typeof results.nutrients.minerals];
+        if (value === undefined) return null;
+
+        return (
+          <div key={name} className="text-center">
+            <p className="font-medium mb-2">
+              {NUTRIENT_NAMES[name as keyof typeof NUTRIENT_NAMES]}
+            </p>
+            <p className="text-sm text-gray-500 mb-1">
+              {value}{getUnit(name)}
+              <span className="text-xs ml-1">
+                / {getRDI(name, gender)}
+                {getUnit(name)}
+              </span>
+            </p>
+            <div className="flex justify-center gap-1">
+              {[...Array(5)].map((_, i) => (
+                <div
+                  key={i}
+                  className={`w-4 h-4 rounded ${
+                    i < calculateSufficiency(
+                      isVitamin(name) ? 'vitamins' : 'minerals',
+                      name,
+                      value,
+                      gender
+                    )
+                      ? 'bg-primary'
+                      : 'bg-gray-200'
+                  }`}
+                />
+              ))}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  </div>
+);
+
+// ユーティリティ関数
+const getUnit = (nutrient: string) => {
+  if (nutrient in NUTRIENT_UNITS.vitamins) return NUTRIENT_UNITS.vitamins[nutrient as keyof typeof NUTRIENT_UNITS.vitamins];
+  return NUTRIENT_UNITS.minerals[nutrient as keyof typeof NUTRIENT_UNITS.minerals];
+};
+
+const isVitamin = (nutrient: string) => nutrient.startsWith('vitamin');
+
+// ユーティリティ関数に追加
+const calculateSufficiency = (
+  type: 'vitamins' | 'minerals',
+  name: string,
+  value: number,
+  gender: 'male' | 'female' = 'male'
+): number => {
+  const rdi = getRDI(name, gender);
+  const percentage = (value / rdi) * 100;
+  return Math.min(Math.floor(percentage / 20), 5);
+};
+
+const getRDI = (
+  name: string,
+  gender: 'male' | 'female'
+): number => {
+  if (name in RDI[gender].vitamins) return RDI[gender].vitamins[name as keyof typeof RDI.male.vitamins];
+  return RDI[gender].minerals[name as keyof typeof RDI.male.minerals];
+};
+
+// メインコンポーネント
 export function MealAnalysis({ results }: MealAnalysisProps) {
-  // 性別選択のラジオボタンを追加
   const [gender, setGender] = useState<'male' | 'female'>('male');
 
   // ミリグラムをグラムに変換（1mg = 0.001g）
@@ -174,7 +273,7 @@ export function MealAnalysis({ results }: MealAnalysisProps) {
 
   // 栄養素の割合を計算（全てグラム単位で統一）
   const nutrientData = [
-    { name: "タンパク質", value: results.nutrients.protein, color: "#0088FE" },
+    { name: "タンパク��", value: results.nutrients.protein, color: "#0088FE" },
     { name: "脂質", value: results.nutrients.fat, color: "#00C49F" },
     { name: "炭水化物", value: results.nutrients.carbs, color: "#FFBB28" },
     { 
@@ -199,10 +298,10 @@ export function MealAnalysis({ results }: MealAnalysisProps) {
   // 充足度を計算する関数
   const calculateSufficiency = (
     category: 'vitamins' | 'minerals',
-    name: keyof (typeof RDI)['male']['vitamins'] | keyof (typeof RDI)['male']['minerals'],
+    name: string,
     value: number
   ) => {
-    const rdi = RDI[gender][category][name];
+    const rdi = RDI[gender][category][name as keyof (typeof RDI)[typeof gender][typeof category]];
     return Math.min(Math.round((value / rdi) * 5), 5);
   };
 
@@ -308,89 +407,44 @@ export function MealAnalysis({ results }: MealAnalysisProps) {
         </div>
       </Card>
 
-      {/* ビタミン・ミネラル充足度 */}
+      {/* 性別選択 */}
       <Card className="p-6">
+      <div className="flex gap-4 justify-center mb-6">
+        <label className="flex items-center">
+          <input
+            type="radio"
+            name="gender"
+            value="male"
+            checked={gender === 'male'}
+            onChange={(e) => setGender(e.target.value as 'male' | 'female')}
+            className="mr-2"
+          />
+          男性
+        </label>
+        <label className="flex items-center">
+          <input
+            type="radio"
+            name="gender"
+            value="female"
+            checked={gender === 'female'}
+            onChange={(e) => setGender(e.target.value as 'male' | 'female')}
+            className="mr-2"
+          />
+          女性
+        </label>
+      </div>
+
+      {/* 栄養素カテゴリー */}
         <h2 className="text-2xl font-bold mb-4">ビタミン・ミネラル充足度</h2>
-        <div className="flex gap-4 mb-4">
-          <label className="flex items-center">
-            <input
-              type="radio"
-              name="gender"
-              value="male"
-              checked={gender === 'male'}
-              onChange={(e) => setGender(e.target.value as 'male' | 'female')}
-              className="mr-2"
-            />
-            男性
-          </label>
-          <label className="flex items-center">
-            <input
-              type="radio"
-              name="gender"
-              value="female"
-              checked={gender === 'female'}
-              onChange={(e) => setGender(e.target.value as 'male' | 'female')}
-              className="mr-2"
-            />
-            女性
-          </label>
-        </div>
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-          {/* ビタミン */}
-          {Object.entries(results.nutrients.vitamins).map(([name, value]) => (
-            <div key={name} className="text-center">
-              <p className="font-medium mb-2">
-                {NUTRIENT_NAMES[name as keyof typeof NUTRIENT_NAMES]}
-              </p>
-              <p className="text-sm text-gray-500 mb-1">
-                {value}{NUTRIENT_UNITS.vitamins[name as keyof typeof NUTRIENT_UNITS.vitamins]}
-                <span className="text-xs ml-1">
-                  / {RDI[gender].vitamins[name as keyof typeof RDI.male.vitamins]}
-                  {NUTRIENT_UNITS.vitamins[name as keyof typeof NUTRIENT_UNITS.vitamins]}
-                </span>
-              </p>
-              <div className="flex justify-center gap-1">
-                {[...Array(5)].map((_, i) => (
-                  <div
-                    key={i}
-                    className={`w-4 h-4 rounded ${
-                      i < calculateSufficiency('vitamins', name as keyof typeof RDI.male.vitamins, value)
-                        ? 'bg-primary' 
-                        : 'bg-gray-200'
-                    }`}
-                  />
-                ))}
-              </div>
-            </div>
-          ))}
-          {/* ミネラル */}
-          {Object.entries(results.nutrients.minerals).map(([name, value]) => (
-            <div key={name} className="text-center">
-              <p className="font-medium mb-2">
-                {NUTRIENT_NAMES[name as keyof typeof NUTRIENT_NAMES]}
-              </p>
-              <p className="text-sm text-gray-500 mb-1">
-                {value}{NUTRIENT_UNITS.minerals[name as keyof typeof NUTRIENT_UNITS.minerals]}
-                <span className="text-xs ml-1">
-                  / {RDI[gender].minerals[name as keyof typeof RDI.male.minerals]}
-                  {NUTRIENT_UNITS.minerals[name as keyof typeof NUTRIENT_UNITS.minerals]}
-                </span>
-              </p>
-              <div className="flex justify-center gap-1">
-                {[...Array(5)].map((_, i) => (
-                  <div
-                    key={i}
-                    className={`w-4 h-4 rounded ${
-                      i < calculateSufficiency('minerals', name as keyof typeof RDI.male.minerals, value)
-                        ? 'bg-primary' 
-                        : 'bg-gray-200'
-                    }`}
-                  />
-                ))}
-              </div>
-            </div>
-          ))}
-        </div>
+        {Object.entries(NUTRIENT_CATEGORIES).map(([key, category]) => (
+          <NutrientCategory
+            key={key}
+            title={category.title}
+            nutrients={category.nutrients}
+            results={results}
+            gender={gender}
+          />
+        ))}
       </Card>
 
       {/* 栄養バランスの改善点 */}

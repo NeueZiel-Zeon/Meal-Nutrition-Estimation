@@ -1,8 +1,13 @@
 import { AnalysisResults, Message } from "@/types/analysis";
 
+interface ChatContext {
+  context: string;
+  imageData?: string;
+}
+
 export async function generateAIResponse(
   message: string, 
-  analysisResults: AnalysisResults | File | string,
+  analysisResults: File | ChatContext,
   mode: 'analyze' | 'chat' = 'chat'
 ): Promise<string> {
   try {
@@ -26,9 +31,12 @@ export async function generateAIResponse(
     }
 
     // チャットモード
-    if (mode === 'chat') {
+    if (mode === 'chat' && !('type' in analysisResults)) {
       formData.append('message', message);
-      formData.append('imageContext', analysisResults.toString());
+      formData.append('imageContext', analysisResults.context);
+      if (analysisResults.imageData) {
+        formData.append('imageData', analysisResults.imageData);
+      }
 
       const response = await fetch('/api/chat', {
         method: 'POST',

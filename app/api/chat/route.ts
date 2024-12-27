@@ -1,6 +1,16 @@
 import { Anthropic } from '@anthropic-ai/sdk';
 import { NextResponse } from 'next/server';
 
+type ContentBlock = {
+  type: "text" | "image";
+  text?: string;
+  source?: {
+    type: "base64";
+    media_type: string;
+    data: string;
+  };
+};
+
 export const dynamic = 'force-dynamic';
 
 const anthropic = new Anthropic({
@@ -55,12 +65,30 @@ export async function POST(request: Request) {
 
     // チャットモード
     if (message && imageContext) {
+      const content: ContentBlock[] = [
+        {
+          type: "text",
+          text: `前提の文脈: ${imageContext}\n\nユーザーの質問: ${message}`
+        }
+      ];
+
+      if (formData.get('imageData')) {
+        content.push({
+          type: "image",
+          source: {
+            type: "base64",
+            media_type: "image/jpeg",
+            data: formData.get('imageData') as string
+          }
+        });
+      }
+
       const response = await anthropic.messages.create({
         model: "claude-3-5-sonnet-20241022",
         max_tokens: 1024,
         messages: [{
           role: "user",
-          content: `前提の文脈: ${imageContext}\n\nユーザーの質問: ${message}`
+          content: content as any
         }],
         system: `あなたは栄養士として、ユーザーの食事写真を基に、健康的な食生活のアドバイスを提供します。
                 以下の形式で回答してください：
