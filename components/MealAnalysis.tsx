@@ -182,7 +182,40 @@ const NUTRIENT_CATEGORIES = {
   }
 };
 
-// 栄養素表示コンポーネント
+// 単一の栄養素表示コンポーネント
+const NutrientDisplay = ({ 
+  name, 
+  value, 
+  unit, 
+  rdi, 
+  sufficiency 
+}: { 
+  name: string;
+  value: number;
+  unit: string;
+  rdi: number;
+  sufficiency: number;
+}) => (
+  <div className="text-center">
+    <p className="font-medium mb-2">{name}</p>
+    <p className="text-sm text-gray-500 mb-1">
+      {value}{unit}
+      <span className="text-xs ml-1">/ {rdi}{unit}</span>
+    </p>
+    <div className="flex justify-center gap-1">
+      {[...Array(5)].map((_, i) => (
+        <div
+          key={i}
+          className={`w-4 h-4 rounded ${
+            i < sufficiency ? 'bg-primary' : 'bg-gray-200'
+          }`}
+        />
+      ))}
+    </div>
+  </div>
+);
+
+// 栄養素カテゴリーコンポーネント
 const NutrientCategory = ({ title, nutrients, results, gender }: {
   title: string;
   nutrients: string[];
@@ -197,36 +230,24 @@ const NutrientCategory = ({ title, nutrients, results, gender }: {
           ? results.nutrients.vitamins[name as keyof typeof results.nutrients.vitamins] ?? 0
           : results.nutrients.minerals[name as keyof typeof results.nutrients.minerals] ?? 0;
         
+        const unit = getUnit(name);
+        const rdi = getRDI(name, gender);
+        const sufficiency = calculateSufficiency(
+          isVitamin(name) ? 'vitamins' : 'minerals',
+          name,
+          value,
+          gender
+        );
+
         return (
-          <div key={name} className="text-center">
-            <p className="font-medium mb-2">
-              {NUTRIENT_NAMES[name as keyof typeof NUTRIENT_NAMES]}
-            </p>
-            <p className="text-sm text-gray-500 mb-1">
-              {value}{getUnit(name)}
-              <span className="text-xs ml-1">
-                / {getRDI(name, gender)}
-                {getUnit(name)}
-              </span>
-            </p>
-            <div className="flex justify-center gap-1">
-              {[...Array(5)].map((_, i) => (
-                <div
-                  key={i}
-                  className={`w-4 h-4 rounded ${
-                    i < calculateSufficiency(
-                      isVitamin(name) ? 'vitamins' : 'minerals',
-                      name,
-                      value,
-                      gender
-                    )
-                      ? 'bg-primary'
-                      : 'bg-gray-200'
-                  }`}
-                />
-              ))}
-            </div>
-          </div>
+          <NutrientDisplay
+            key={name}
+            name={NUTRIENT_NAMES[name as keyof typeof NUTRIENT_NAMES]}
+            value={value}
+            unit={unit}
+            rdi={rdi}
+            sufficiency={sufficiency}
+          />
         );
       })}
     </div>
