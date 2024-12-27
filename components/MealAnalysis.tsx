@@ -193,10 +193,10 @@ const NutrientCategory = ({ title, nutrients, results, gender }: {
     <h3 className="font-medium text-lg mb-3">{title}</h3>
     <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
       {nutrients.map(name => {
-        const value = results.nutrients.vitamins[name as keyof typeof results.nutrients.vitamins] ||
-                     results.nutrients.minerals[name as keyof typeof results.nutrients.minerals];
-        if (value === undefined) return null;
-
+        const value = isVitamin(name)
+          ? results.nutrients.vitamins[name as keyof typeof results.nutrients.vitamins] ?? 0
+          : results.nutrients.minerals[name as keyof typeof results.nutrients.minerals] ?? 0;
+        
         return (
           <div key={name} className="text-center">
             <p className="font-medium mb-2">
