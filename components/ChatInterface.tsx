@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Send } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -14,10 +14,18 @@ interface ChatInterfaceProps {
   imageData: string | null | undefined;
 }
 
-export function ChatInterface({ analysisResults, imageData }: ChatInterfaceProps) {
+export function ChatInterface({
+  analysisResults,
+  imageData,
+}: ChatInterfaceProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    console.log("WebSocket接続を試みています...");
+    // WebSocket接続のデバッグログを追加
+  }, []);
 
   const handleSend = async () => {
     if (!input.trim() || isLoading) return;
@@ -29,28 +37,37 @@ export function ChatInterface({ analysisResults, imageData }: ChatInterfaceProps
       timestamp: Date.now(),
     };
 
-    setMessages(prev => [...prev, userMessage]);
+    setMessages((prev) => [...prev, userMessage]);
     setInput("");
     setIsLoading(true);
 
     try {
-      const response = await generateAIResponse(input, {
-        context: analysisResults,
-        imageData: imageData || undefined
-      }, 'chat');
-      
+      const response = await generateAIResponse(
+        input,
+        {
+          context: analysisResults,
+          imageData: imageData || undefined,
+        },
+        "chat"
+      );
+
       const aiMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: "assistant",
         content: response,
         timestamp: Date.now(),
       };
-      setMessages(prev => [...prev, aiMessage]);
+      setMessages((prev) => [...prev, aiMessage]);
     } catch (error) {
       console.error("Error generating response:", error);
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleError = (error: any) => {
+    console.error("チャットエラー:", error);
+    // エラーメッセージをユーザーに表示
   };
 
   return (
@@ -79,9 +96,7 @@ export function ChatInterface({ analysisResults, imageData }: ChatInterfaceProps
           ))}
           {isLoading && (
             <div className="flex justify-start">
-              <div className="bg-muted rounded-lg p-3">
-                入力中...
-              </div>
+              <div className="bg-muted rounded-lg p-3">入力中...</div>
             </div>
           )}
         </div>
