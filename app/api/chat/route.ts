@@ -19,8 +19,26 @@ const anthropic = new Anthropic({
 
 export const runtime = "edge";
 
+export const config = {
+  api: {
+    bodyParser: {
+      sizeLimit: "10mb",
+    },
+    responseLimit: false,
+  },
+};
+
 export async function POST(request: Request) {
   try {
+    const contentLength = request.headers.get("content-length");
+    if (contentLength && parseInt(contentLength) > 10 * 1024 * 1024) {
+      // 10MB制限
+      return NextResponse.json(
+        { error: "リクエストサイズが大きすぎます" },
+        { status: 413 }
+      );
+    }
+
     const response = NextResponse.next();
 
     // CORSヘッダーを設定

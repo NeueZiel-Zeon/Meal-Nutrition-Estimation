@@ -30,18 +30,28 @@ export function ChatInterface({
   const handleSend = async () => {
     if (!input.trim() || isLoading) return;
 
-    const userMessage: Message = {
-      id: Date.now().toString(),
-      role: "user",
-      content: input,
-      timestamp: Date.now(),
-    };
-
-    setMessages((prev) => [...prev, userMessage]);
-    setInput("");
-    setIsLoading(true);
-
     try {
+      setIsLoading(true);
+      console.log(
+        "リクエストサイズ:",
+        new Blob([
+          JSON.stringify({
+            input,
+            imageData,
+          }),
+        ]).size
+      );
+
+      const userMessage: Message = {
+        id: Date.now().toString(),
+        role: "user",
+        content: input,
+        timestamp: Date.now(),
+      };
+
+      setMessages((prev) => [...prev, userMessage]);
+      setInput("");
+
       const response = await generateAIResponse(
         input,
         {
@@ -59,7 +69,8 @@ export function ChatInterface({
       };
       setMessages((prev) => [...prev, aiMessage]);
     } catch (error) {
-      console.error("Error generating response:", error);
+      console.error("詳細なエラー情報:", error);
+      handleError(error);
     } finally {
       setIsLoading(false);
     }
