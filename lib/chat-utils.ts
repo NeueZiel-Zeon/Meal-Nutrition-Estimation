@@ -6,38 +6,65 @@ interface ChatContext {
 }
 
 async function compressImage(base64Data: string): Promise<string> {
-  // Base64データをBlobに変換
-  const blob = await fetch(base64Data).then((res) => res.blob());
+  try {
+    // Base64のヘッダー部分を処理
+    const base64WithoutHeader = base64Data.replace(
+      /^data:image\/\w+;base64,/,
+      ""
+    );
 
-  // Canvas要素を作成
-  const img = new Image();
-  const canvas = document.createElement("canvas");
-  const ctx = canvas.getContext("2d");
+    // Canvas要素を作成
+    const img = new Image();
+    const canvas = document.createElement("canvas");
+    const ctx = canvas.getContext("2d");
 
-  return new Promise((resolve) => {
-    img.onload = () => {
-      // 画像サイズを調整（例：最大幅1024px）
-      let width = img.width;
-      let height = img.height;
-      const maxWidth = 1024;
+    return new Promise((resolve, reject) => {
+      img.onload = () => {
+        try {
+          // 画像サイズをより小さく調整
+          let width = img.width;
+          let height = img.height;
+          const maxWidth = 600; // 最大幅をさらに小さく
 
-      if (width > maxWidth) {
-        height = (height * maxWidth) / width;
-        width = maxWidth;
-      }
+          if (width > maxWidth) {
+            height = Math.floor((height * maxWidth) / width);
+            width = maxWidth;
+          }
 
-      canvas.width = width;
-      canvas.height = height;
+          canvas.width = width;
+          canvas.height = height;
+          ctx?.drawImage(img, 0, 0, width, height);
 
-      // 画像を描画
-      ctx?.drawImage(img, 0, 0, width, height);
+          // より高い圧縮率で圧縮（0.3 = 30%品質）
+          const compressedData = canvas.toDataURL("image/jpeg", 0.3);
 
-      // 圧縮して返す（品質0.7）
-      resolve(canvas.toDataURL("image/jpeg", 0.7));
-    };
+          // Base64ヘッダーを除去
+          const finalData = compressedData.split(",")[1];
 
-    img.src = base64Data;
-  });
+          console.log(
+            "圧縮後のサイズ:",
+            Math.floor((finalData.length * 0.75) / 1024),
+            "KB"
+          );
+
+          resolve(finalData); // ヘッダーなしのBase64データを返す
+        } catch (error) {
+          console.error("画像圧縮エラー:", error);
+          reject(error);
+        }
+      };
+
+      img.onerror = (error) => {
+        console.error("画像読み込みエラー:", error);
+        reject(error);
+      };
+
+      img.src = base64Data;
+    });
+  } catch (error) {
+    console.error("画像処理エラー:", error);
+    throw error;
+  }
 }
 
 export async function generateAIResponse(
@@ -57,7 +84,7 @@ export async function generateAIResponse(
     }
 
     if (options.imageData) {
-      // 画像を圧縮してから追加
+      // Base64文字列を圧縮して送信
       const compressedImage = await compressImage(options.imageData);
       formData.append("imageData", compressedImage);
     }

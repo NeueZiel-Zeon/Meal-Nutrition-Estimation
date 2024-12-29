@@ -22,10 +22,10 @@ const anthropic = new Anthropic({
 export async function POST(request: Request) {
   try {
     const contentLength = request.headers.get("content-length");
-    if (contentLength && parseInt(contentLength) > 10 * 1024 * 1024) {
-      // 10MB制限
+    if (contentLength && parseInt(contentLength) > 4 * 1024 * 1024) {
+      // 4MB制限
       return NextResponse.json(
-        { error: "リクエストサイズが大きすぎます" },
+        { error: "リクエストサイズが大きすぎます（制限: 4MB）" },
         { status: 413 }
       );
     }
