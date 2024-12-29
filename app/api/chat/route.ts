@@ -11,22 +11,13 @@ type ContentBlock = {
   };
 };
 
+export const maxDuration = 300; // 5分
 export const dynamic = "force-dynamic";
+export const runtime = "edge";
 
 const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
 });
-
-export const runtime = "edge";
-
-export const config = {
-  api: {
-    bodyParser: {
-      sizeLimit: "10mb",
-    },
-    responseLimit: false,
-  },
-};
 
 export async function POST(request: Request) {
   try {
