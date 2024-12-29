@@ -7,11 +7,10 @@ interface ChatContext {
 
 async function compressImage(base64Data: string): Promise<string> {
   try {
-    // Base64のヘッダー部分を処理
-    const base64WithoutHeader = base64Data.replace(
-      /^data:image\/\w+;base64,/,
-      ""
-    );
+    // Base64文字列を適切な形式に変換
+    const base64WithHeader = base64Data.includes("data:image/")
+      ? base64Data
+      : `data:image/jpeg;base64,${base64Data}`;
 
     // Canvas要素を作成
     const img = new Image();
@@ -24,7 +23,7 @@ async function compressImage(base64Data: string): Promise<string> {
           // 画像サイズをより小さく調整
           let width = img.width;
           let height = img.height;
-          const maxWidth = 600; // 最大幅をさらに小さく
+          const maxWidth = 600;
 
           if (width > maxWidth) {
             height = Math.floor((height * maxWidth) / width);
@@ -38,7 +37,7 @@ async function compressImage(base64Data: string): Promise<string> {
           // より高い圧縮率で圧縮（0.3 = 30%品質）
           const compressedData = canvas.toDataURL("image/jpeg", 0.3);
 
-          // Base64ヘッダーを除去
+          // Base64ヘッダーを除去して純粋なBase64データを取得
           const finalData = compressedData.split(",")[1];
 
           console.log(
@@ -47,19 +46,26 @@ async function compressImage(base64Data: string): Promise<string> {
             "KB"
           );
 
-          resolve(finalData); // ヘッダーなしのBase64データを返す
+          resolve(finalData);
         } catch (error) {
           console.error("画像圧縮エラー:", error);
           reject(error);
         }
       };
 
-      img.onerror = (error) => {
-        console.error("画像読み込みエラー:", error);
-        reject(error);
+      // エラーハンドリングを追加
+      img.onerror = () => {
+        console.error("画像の読み込みに失敗しました");
+        reject(new Error("画像の読み込みに失敗しました"));
       };
 
-      img.src = base64Data;
+      // クロスオリジンの問題を回避
+      img.crossOrigin = "anonymous";
+
+      // Base64データをセット
+      setTimeout(() => {
+        img.src = base64WithHeader;
+      }, 0);
     });
   } catch (error) {
     console.error("画像処理エラー:", error);
@@ -84,9 +90,15 @@ export async function generateAIResponse(
     }
 
     if (options.imageData) {
-      // Base64文字列を圧縮して送信
-      const compressedImage = await compressImage(options.imageData);
-      formData.append("imageData", compressedImage);
+      try {
+        console.log("画像圧縮を開始します");
+        const compressedImage = await compressImage(options.imageData);
+        console.log("画像圧縮が完了しました");
+        formData.append("imageData", compressedImage);
+      } catch (error) {
+        console.error("画像圧縮エラー:", error);
+        throw new Error("画像の処理に失敗しました");
+      }
     }
 
     // 分析モード - 画像から食事内容の説明を取得
