@@ -15,5 +15,5 @@ export default async function Home() {
     redirect("/auth/login");
   }
 
-  redirect("/meal-analysis");
+  redirect("/dashboard");
 }

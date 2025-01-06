@@ -27,13 +27,13 @@ export async function middleware(req: NextRequest) {
     return NextResponse.redirect(new URL('/auth/login', req.url));
   }
 
-  // ログイン済みユーザーがauth関連ページにアクセスした場合、meal-analysisへリダイレクト
+  // ログイン済みユーザーがauth関連ページにアクセスした場合、dashboardへリダイレクト
   if (session && (
     req.nextUrl.pathname.startsWith('/auth/login') ||
     req.nextUrl.pathname.startsWith('/auth/signup')
   )) {
-    console.log('Middleware: Redirecting to meal-analysis');
-    return NextResponse.redirect(new URL('/meal-analysis', req.url));
+    console.log('Middleware: Redirecting to dashboard');
+    return NextResponse.redirect(new URL('/dashboard', req.url));
   }
 
   return res;

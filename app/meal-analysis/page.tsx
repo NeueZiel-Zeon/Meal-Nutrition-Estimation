@@ -9,12 +9,14 @@ import { MealAnalysis } from "@/components/MealAnalysis";
 import { ImageUpload } from "@/components/ImageUpload";
 import { ChatInterface } from "@/components/ChatInterface";
 import { AnalysisResults } from "@/types/analysis";
-import { analyzeImage, getImageContext } from "@/lib/analyze-image";
+import { analyzeImage, getImageContext, saveAnalysisResult } from "@/lib/analyze-image";
 import { generateAIResponse } from "@/lib/chat-utils";
 import { getServerClient } from '@/lib/supabase/server';
 import { useRouter } from "next/navigation";
 import { useSupabase } from "@/components/providers/SupabaseProvider";
 import { useToast } from "@/components/ui/use-toast";
+import { AnalysisHistory } from "@/components/AnalysisHistory";
+import { MainNav } from "@/components/dashboard/main-nav";
 
 export default function Home() {
   const router = useRouter();
@@ -44,17 +46,26 @@ export default function Home() {
     setIsAnalyzing(true);
     
     try {
-      console.log('Starting analysis for file:', selectedImage.name);
-
-      // 数値データの分析のみを実行
-      console.log('Getting numerical analysis...');
+      // 分析実行
       const results = await analyzeImage(selectedImage);
-      console.log('Received analysis results:', results);
-      setAnalysisResults(results);
       
+      // 分析結果と画像を保存
+      await saveAnalysisResult(results, selectedImage);
+      
+      setAnalysisResults(results);
       setActiveTab("analysis");
+      
+      toast({
+        title: "分析完了",
+        description: "結果が保存されました",
+      });
     } catch (error) {
       console.error('分析エラー:', error);
+      toast({
+        title: "エラー",
+        description: error instanceof Error ? error.message : "分析に失敗しました",
+        variant: "destructive"
+      });
     } finally {
       setIsAnalyzing(false);
     }
@@ -81,64 +92,67 @@ export default function Home() {
   };
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="absolute top-4 right-4">
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={handleLogout}
-          className="flex items-center gap-2"
-        >
-          <LogOut className="h-4 w-4" />
-          ログアウト
-        </Button>
+    <>
+      <div className="border-b">
+        <div className="flex h-16 items-center px-4">
+          <MainNav className="mx-6" />
+          <div className="ml-auto flex items-center space-x-4">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleLogout}
+              className="flex items-center gap-2"
+            >
+              <LogOut className="h-4 w-4" />
+              ログアウト
+            </Button>
+          </div>
+        </div>
       </div>
 
-      <h1 className="text-4xl font-bold text-center mb-8">食事分析システム</h1>
-      
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="max-w-4xl mx-auto">
-        <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="upload">画像アップロード</TabsTrigger>
-          <TabsTrigger value="analysis" disabled={!analysisResults}>
-            分析結果
-          </TabsTrigger>
-          <TabsTrigger value="chat" disabled={!analysisResults}>
-            AIアシスタント
-          </TabsTrigger>
-        </TabsList>
+      <div className="container mx-auto px-4 py-8">
+        <h1 className="text-4xl font-bold text-center mb-8">食事分析システム</h1>
+        
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="max-w-4xl mx-auto">
+          <TabsList className="grid w-full grid-cols-3">
+            <TabsTrigger value="upload">画像アップロード</TabsTrigger>
+            <TabsTrigger value="analysis" disabled={!analysisResults}>分析結果</TabsTrigger>
+            <TabsTrigger value="chat" disabled={!analysisResults}>AIアシスタント</TabsTrigger>
+          </TabsList>
 
-        <TabsContent value="upload">
-          <Card className="p-6">
-            <ImageUpload
-              onImageSelect={handleImageSelect}
-              previewUrl={previewUrl}
-            />
-            
-            <div className="mt-6 flex justify-center">
-              <Button
-                onClick={handleAnalyze}
-                disabled={!selectedImage || isAnalyzing}
-                className="w-full max-w-sm"
-              >
-                {isAnalyzing ? "分析中..." : "分析開始"}
-              </Button>
-            </div>
-          </Card>
-        </TabsContent>
+          <TabsContent value="upload">
+            <Card className="p-6">
+              <ImageUpload
+                onImageSelect={handleImageSelect}
+                previewUrl={previewUrl}
+              />
+              
+              <div className="mt-6 flex justify-center">
+                <Button
+                  onClick={handleAnalyze}
+                  disabled={!selectedImage || isAnalyzing}
+                  className="w-full max-w-sm"
+                >
+                  {isAnalyzing ? "分析中..." : "分析開始"}
+                </Button>
+              </div>
+            </Card>
+          </TabsContent>
 
-        <TabsContent value="analysis">
-          {analysisResults && <MealAnalysis results={analysisResults} />}
-        </TabsContent>
+          <TabsContent value="analysis">
+            {analysisResults && <MealAnalysis results={analysisResults} />}
+          </TabsContent>
 
-        <TabsContent value="chat">
-          {analysisResults && (
-            <ChatInterface 
-              analysisResults={analysisResults}
-              imageData={imageBase64}
-            />
-          )}
-        </TabsContent>
-      </Tabs>
-    </div>
+          <TabsContent value="chat">
+            {analysisResults && (
+              <ChatInterface 
+                analysisResults={analysisResults}
+                imageData={imageBase64}
+              />
+            )}
+          </TabsContent>
+        </Tabs>
+      </div>
+    </>
   );
 }

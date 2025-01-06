@@ -69,4 +69,171 @@ export async function getImageContext(file: File): Promise<string> {
     console.error('Error getting image context:', error);
     throw error;
   }
+}
+
+export async function saveAnalysisResult(
+  results: AnalysisResults,
+  imageFile: File
+) {
+  try {
+    // 画像をStorageにアップロード
+    const fileName = `${Date.now()}-${imageFile.name}`;
+    const { data: uploadData, error: uploadError } = await supabaseClient.storage
+      .from('meal-images')
+      .upload(fileName, imageFile, {
+        cacheControl: '3600',
+        upsert: false
+      });
+
+    if (uploadError) throw uploadError;
+
+    // 公開URLを取得
+    const { data: { publicUrl } } = supabaseClient.storage
+      .from('meal-images')
+      .getPublicUrl(fileName);
+
+    // 分析結果をDBに保存
+    const { data, error } = await supabaseClient
+      .from('meal_analyses')
+      .insert([
+        {
+          user_id: (await supabaseClient.auth.getUser()).data.user?.id,
+          detected_dishes: results.detectedDishes,
+          food_items: results.foodItems,
+          calories: results.calories,
+          portions: results.portions,
+          nutrients: results.nutrients,
+          deficient_nutrients: results.deficientNutrients,
+          excessive_nutrients: results.excessiveNutrients,
+          improvements: results.improvements,
+          image_url: publicUrl
+        }
+      ])
+      .select();
+
+    if (error) throw error;
+    return data;
+  } catch (error) {
+    console.error('Error saving analysis:', error);
+    throw error;
+  }
+}
+
+export async function getUserAnalyses() {
+  try {
+    const { data, error } = await supabaseClient
+      .from('meal_analyses')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    return data;
+  } catch (error) {
+    console.error('Error fetching analyses:', error);
+    throw error;
+  }
+}
+
+export interface NutrientSummary {
+  totalCalories: number;
+  totalProtein: number;
+  totalCarbs: number;
+  totalFat: number;
+}
+
+export async function getNutrientsByDateRange(startDate: Date, endDate: Date): Promise<NutrientSummary> {
+  try {
+    // 開始日を0時0分0秒に、終了日を23時59分59秒に設定
+    const from = new Date(startDate);
+    from.setHours(0, 0, 0, 0);
+    
+    const to = new Date(endDate);
+    to.setHours(23, 59, 59, 999);
+
+    const { data, error } = await supabaseClient
+      .from('meal_analyses')
+      .select('calories, nutrients')
+      .gte('created_at', from.toISOString())
+      .lte('created_at', to.toISOString());
+
+    if (error) throw error;
+
+    return data.reduce((acc, meal) => ({
+      totalCalories: acc.totalCalories + meal.calories,
+      totalProtein: acc.totalProtein + meal.nutrients.protein,
+      totalCarbs: acc.totalCarbs + meal.nutrients.carbs,
+      totalFat: acc.totalFat + meal.nutrients.fat
+    }), {
+      totalCalories: 0,
+      totalProtein: 0,
+      totalCarbs: 0,
+      totalFat: 0
+    });
+  } catch (error) {
+    console.error('Error fetching nutrients:', error);
+    throw error;
+  }
+}
+
+export interface DailyCalories {
+  name: string;      // 曜日と日付
+  dayOfWeek: string; // 曜日のみ（ソート用）
+  total: number;     // カロリー
+}
+
+export async function getWeeklyCalories(): Promise<DailyCalories[]> {
+  try {
+    // 現在の日付から直近の日曜日まで戻る
+    const today = new Date();
+    const currentDay = today.getDay();
+    const startDate = new Date(today);
+    startDate.setDate(today.getDate() - currentDay);
+    startDate.setHours(0, 0, 0, 0);
+
+    const endDate = new Date(startDate);
+    endDate.setDate(startDate.getDate() + 6);
+    endDate.setHours(23, 59, 59, 999);
+
+    const { data, error } = await supabaseClient
+      .from('meal_analyses')
+      .select('calories, created_at')
+      .gte('created_at', startDate.toISOString())
+      .lte('created_at', endDate.toISOString());
+
+    if (error) throw error;
+
+    // 日付ごとにカロリーを集計
+    const dailyCalories = new Map<string, number>();
+    const days = ['日', '月', '火', '水', '木', '金', '土'];
+    const result: DailyCalories[] = [];
+
+    // 日曜日から土曜日までのデータを作成
+    for (let i = 0; i < 7; i++) {
+      const date = new Date(startDate);
+      date.setDate(startDate.getDate() + i);
+      const dayOfWeek = days[date.getDay()];
+      const formattedDate = `${dayOfWeek}(${date.getMonth() + 1}/${date.getDate()})`;
+      
+      // その日のカロリーを集計
+      const dayTotal = data
+        .filter(meal => {
+          const mealDate = new Date(meal.created_at);
+          return mealDate.getDate() === date.getDate() &&
+                 mealDate.getMonth() === date.getMonth() &&
+                 mealDate.getFullYear() === date.getFullYear();
+        })
+        .reduce((sum, meal) => sum + meal.calories, 0);
+
+      result.push({
+        name: formattedDate,
+        dayOfWeek,
+        total: dayTotal
+      });
+    }
+
+    return result;
+  } catch (error) {
+    console.error('Error fetching weekly calories:', error);
+    throw error;
+  }
 } 
