@@ -10,7 +10,7 @@ import { AnalysisResults, Message } from "@/types/analysis";
 import { generateAIResponse } from "@/lib/chat-utils";
 
 interface ChatInterfaceProps {
-  analysisResults: string;
+  analysisResults: AnalysisResults;
   imageData: string | null | undefined;
 }
 
@@ -55,7 +55,7 @@ export function ChatInterface({
       const response = await generateAIResponse(
         input,
         {
-          context: analysisResults,
+          analysisJson: analysisResults,
           imageData: imageData || undefined,
         },
         "chat"

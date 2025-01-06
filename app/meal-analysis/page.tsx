@@ -46,13 +46,7 @@ export default function Home() {
     try {
       console.log('Starting analysis for file:', selectedImage.name);
 
-      // まず画像の説明テキストを取得（chat/route.tsを使用）
-      console.log('Getting image context from chat API...');
-      const contextText = await getImageContext(selectedImage);
-      console.log('Received context from chat API:', contextText);
-      setImageContext(contextText);
-
-      // 次に数値データの分析（analyze/route.tsを使用）
+      // 数値データの分析のみを実行
       console.log('Getting numerical analysis...');
       const results = await analyzeImage(selectedImage);
       console.log('Received analysis results:', results);
@@ -108,7 +102,7 @@ export default function Home() {
           <TabsTrigger value="analysis" disabled={!analysisResults}>
             分析結果
           </TabsTrigger>
-          <TabsTrigger value="chat" disabled={!imageContext}>
+          <TabsTrigger value="chat" disabled={!analysisResults}>
             AIアシスタント
           </TabsTrigger>
         </TabsList>
@@ -137,9 +131,9 @@ export default function Home() {
         </TabsContent>
 
         <TabsContent value="chat">
-          {imageContext && (
+          {analysisResults && (
             <ChatInterface 
-              analysisResults={imageContext}
+              analysisResults={analysisResults}
               imageData={imageBase64}
             />
           )}

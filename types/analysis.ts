@@ -12,6 +12,7 @@ export interface VitaminData {
 
 export interface AnalysisResults {
   foodItems: string[];
+  detectedDishes: string[];
   calories: number;
   portions: {
     [key: string]: number;

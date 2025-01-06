@@ -78,6 +78,7 @@ export async function generateAIResponse(
   options: {
     context?: string;
     imageData?: string;
+    analysisJson?: AnalysisResults;
   },
   mode: "analyze" | "chat"
 ): Promise<string> {
@@ -85,8 +86,8 @@ export async function generateAIResponse(
     const formData = new FormData();
     formData.append("message", input);
 
-    if (options.context) {
-      formData.append("imageContext", options.context);
+    if (options.analysisJson) {
+      formData.append("analysisContext", JSON.stringify(options.analysisJson));
     }
 
     if (options.imageData) {
@@ -101,25 +102,8 @@ export async function generateAIResponse(
       }
     }
 
-    // 分析モード - 画像から食事内容の説明を取得
-    if (mode === "analyze" && options instanceof File) {
-      formData.append("file", options);
-
-      const response = await fetch("/api/chat", {
-        method: "POST",
-        body: formData,
-      });
-
-      if (!response.ok) {
-        throw new Error("APIリクエストに失敗しました");
-      }
-
-      const data = await response.json();
-      return data.imageContext; // 画像の分析結果テキストを返す
-    }
-
     // チャットモード
-    if (mode === "chat" && !("type" in options)) {
+    if (mode === "chat") {
       const response = await fetch("/api/chat", {
         method: "POST",
         body: formData,

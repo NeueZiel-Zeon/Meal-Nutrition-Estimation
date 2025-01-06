@@ -10,18 +10,23 @@ export async function analyzeImage(file: File): Promise<AnalysisResults> {
     const response = await fetch('/api/analyze', {
       method: 'POST',
       body: formData,
+      cache: 'no-store',
+      signal: AbortSignal.timeout(30000)
     });
 
     if (!response.ok) {
       const errorText = await response.text();
       console.error('API Response:', errorText);
-      throw new Error('画像の分析に失敗しました');
+      throw new Error(`分析に失敗しました (${response.status}): ${errorText}`);
     }
 
     const data = await response.json();
     return data;
   } catch (error) {
     console.error('Error in analyzeImage:', error);
+    if (error instanceof TypeError && error.message === 'Failed to fetch') {
+      throw new Error('APIサーバーに接続できません。サーバーが起動していることを確認してください。');
+    }
     throw error;
   }
 }

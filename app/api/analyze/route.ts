@@ -2,7 +2,9 @@ import { Anthropic } from '@anthropic-ai/sdk';
 import { NextResponse } from 'next/server';
 
 // APIルートを動的に設定
+export const maxDuration = 300; // 5分
 export const dynamic = 'force-dynamic';
+export const runtime = 'edge'; // エッジランタイムを使用
 
 const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
@@ -44,6 +46,7 @@ export async function POST(request: Request) {
               text: `この食事の写真を分析し、以下の形式のJSONで回答してください：
 
                     {
+                    "detectedDishes": ["料理名1", "料理名2", ...],
                     "foodItems": ["食材1", "食材2", ...],
                     "calories": 数値,
                     "portions": {
@@ -93,6 +96,9 @@ export async function POST(request: Request) {
                     "improvements": ["改善提案1", "改善提案2", "改善提案3"]
                     }
 
+                    料理名は、写真から判断できる具体的な料理名を日本語で記載してください。
+                    例：「ハンバーグ」「味噌汁」「サラダ」など
+                    
                     vitaminsとmineralsは、極端に少ないと判断される場合は0で返してください。
                     ビタミンB群やミネラルは、量の推定が難しいので深く考えてください。推定ができないと判断される場合は、0で返してください。
                     不足・過剰な栄養素は必ず日本語の栄養素名で返してください。`

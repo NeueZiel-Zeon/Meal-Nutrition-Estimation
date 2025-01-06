@@ -44,62 +44,23 @@ export async function POST(request: Request) {
     );
 
     const formData = await request.formData();
-    const file = formData.get("file") as File | null;
     const message = formData.get("message") as string | null;
-    const imageContext = formData.get("imageContext") as string | null;
 
-    // 画像分析モード
-    if (file) {
-      const bytes = await file.arrayBuffer();
-      const base64Image = Buffer.from(bytes).toString("base64");
-
-      const response = await anthropic.messages.create({
-        model: "claude-3-5-sonnet-20241022",
-        max_tokens: 1024,
-        messages: [
-          {
-            role: "user",
-            content: [
-              {
-                type: "image",
-                source: {
-                  type: "base64",
-                  media_type: file.type as
-                    | "image/jpeg"
-                    | "image/png"
-                    | "image/gif"
-                    | "image/webp",
-                  data: base64Image,
-                },
-              },
-              {
-                type: "text",
-                text: "この食事の写真を見て、栄養バランスや健康的な食事についてアドバイスできるように、写真の内容を詳しく観察してください",
-              },
-            ],
-          },
-        ],
-        system:
-          "あなたは栄養士として、ユーザーの食事写真を基に、健康的な食生活のアドバイスを提供します。専門的な知識を活かしながら、丁寧な口調で会話してください。",
-      });
-
-      // content[0]がテキストであることを確認
-      const textContent = response.content.find((c) => c.type === "text");
-      if (!textContent || !("text" in textContent)) {
-        throw new Error("Invalid response format");
-      }
-
-      return NextResponse.json({
-        imageContext: textContent.text,
-      });
-    }
-
-    // チャットモード
-    if (message && imageContext) {
+    if (message) {
+      const analysisContext = formData.get("analysisContext") as string | null;
+      const parsedAnalysis = analysisContext ? JSON.parse(analysisContext) : null;
+      
       const content: ContentBlock[] = [
         {
           type: "text",
-          text: `前提の文脈: ${imageContext}\n\nユーザーの質問: ${message}`,
+          text: `
+          検出された料理：
+          ${parsedAnalysis?.detectedDishes?.join('、') || '不明'}
+
+          詳細な分析結果：
+          ${analysisContext}
+
+          ユーザーの質問：${message}`,
         },
       ];
 

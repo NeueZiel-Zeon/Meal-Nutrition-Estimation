@@ -316,18 +316,20 @@ export function MealAnalysis({ results }: MealAnalysisProps) {
     percentage: ((item.value / totalNutrients) * 100).toFixed(1)
   }));
 
-  // 充足度を計算する関数
-  const calculateSufficiency = (
-    category: 'vitamins' | 'minerals',
-    name: string,
-    value: number
-  ) => {
-    const rdi = RDI[gender][category][name as keyof (typeof RDI)[typeof gender][typeof category]];
-    return Math.min(Math.round((value / rdi) * 5), 5);
-  };
-
   return (
     <div className="space-y-6">
+      {/* 検出された料理 */}
+      <Card className="p-6">
+        <h2 className="text-2xl font-bold mb-4">検出された料理</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {results.detectedDishes?.map((dish, index) => (
+            <div key={index} className="flex justify-between items-center p-2 bg-gray-50 rounded">
+              <span className="font-medium">{dish}</span>
+            </div>
+          ))}
+        </div>
+      </Card>
+
       {/* 検出された食材と分量 */}
       <Card className="p-6">
         <h2 className="text-2xl font-bold mb-4">検出された食材と分量</h2>
