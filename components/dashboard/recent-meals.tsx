@@ -21,8 +21,19 @@ export function RecentMeals() {
     const loadMeals = async () => {
       try {
         const data = await getUserAnalyses();
-        // 最新の3件のみを取得
-        setMeals(data.slice(0, 3));
+        
+        // 今日の日付の開始と終了を設定
+        const today = new Date();
+        const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+        const endOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59, 59);
+
+        // 今日の食事のみをフィルタリング
+        const todaysMeals = data.filter(meal => {
+          const mealDate = new Date(meal.created_at);
+          return mealDate >= startOfDay && mealDate <= endOfDay;
+        });
+
+        setMeals(todaysMeals);
       } catch (error) {
         console.error("Failed to load meals:", error);
       } finally {
@@ -37,13 +48,21 @@ export function RecentMeals() {
     return <div>読み込み中...</div>;
   }
 
+  if (meals.length === 0) {
+    return (
+      <div className="text-center text-muted-foreground">
+        本日の食事記録はありません
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-8">
       {meals.map((meal) => (
         <div key={meal.id} className="flex items-center">
           <div className="ml-4 space-y-1 flex-grow">
             <p className="text-base font-medium leading-none">
-              {format(new Date(meal.created_at), "M月d日 HH:mm", { locale: ja })}
+              {format(new Date(meal.created_at), "HH:mm", { locale: ja })}
             </p>
             <p className="text-base text-muted-foreground">
               <span className="font-bold text-foreground">
@@ -57,11 +76,6 @@ export function RecentMeals() {
           <div className="ml-auto font-medium">{meal.calories} kcal</div>
         </div>
       ))}
-      {meals.length === 0 && (
-        <div className="text-center text-muted-foreground">
-          食事記録がありません
-        </div>
-      )}
     </div>
   );
 }

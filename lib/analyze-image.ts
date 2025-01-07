@@ -139,6 +139,18 @@ export interface NutrientSummary {
   totalProtein: number;
   totalCarbs: number;
   totalFat: number;
+  totalVitamins: {
+    vitaminA: number;
+    vitaminD: number;
+    vitaminB12: number;
+    vitaminC: number;
+  };
+  totalMinerals: {
+    calcium: number;
+    iron: number;
+    potassium: number;
+    magnesium: number;
+  };
 }
 
 export async function getNutrientsByDateRange(startDate: Date, endDate: Date): Promise<NutrientSummary> {
@@ -162,12 +174,36 @@ export async function getNutrientsByDateRange(startDate: Date, endDate: Date): P
       totalCalories: acc.totalCalories + meal.calories,
       totalProtein: acc.totalProtein + meal.nutrients.protein,
       totalCarbs: acc.totalCarbs + meal.nutrients.carbs,
-      totalFat: acc.totalFat + meal.nutrients.fat
+      totalFat: acc.totalFat + meal.nutrients.fat,
+      totalVitamins: {
+        vitaminA: acc.totalVitamins.vitaminA + meal.nutrients.vitamins.vitaminA,
+        vitaminD: acc.totalVitamins.vitaminD + meal.nutrients.vitamins.vitaminD,
+        vitaminB12: acc.totalVitamins.vitaminB12 + meal.nutrients.vitamins.vitaminB12,
+        vitaminC: acc.totalVitamins.vitaminC + meal.nutrients.vitamins.vitaminC
+      },
+      totalMinerals: {
+        calcium: acc.totalMinerals.calcium + meal.nutrients.minerals.calcium,
+        iron: acc.totalMinerals.iron + meal.nutrients.minerals.iron,
+        potassium: acc.totalMinerals.potassium + meal.nutrients.minerals.potassium,
+        magnesium: acc.totalMinerals.magnesium + meal.nutrients.minerals.magnesium
+      }
     }), {
       totalCalories: 0,
       totalProtein: 0,
       totalCarbs: 0,
-      totalFat: 0
+      totalFat: 0,
+      totalVitamins: {
+        vitaminA: 0,
+        vitaminD: 0,
+        vitaminB12: 0,
+        vitaminC: 0
+      },
+      totalMinerals: {
+        calcium: 0,
+        iron: 0,
+        potassium: 0,
+        magnesium: 0
+      }
     });
   } catch (error) {
     console.error('Error fetching nutrients:', error);

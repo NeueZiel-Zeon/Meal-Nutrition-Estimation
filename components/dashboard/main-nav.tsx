@@ -18,6 +18,12 @@ export function MainNav({
         ホーム
       </Link>
       <Link
+        href="/meal-management"
+        className="text-sm font-medium text-muted-foreground transition-colors hover:text-primary"
+      >
+        食事管理
+      </Link>
+      <Link
         href="/meal-analysis"
         className="text-sm font-medium text-muted-foreground transition-colors hover:text-primary"
       >
