@@ -142,14 +142,35 @@ export interface NutrientSummary {
   totalVitamins: {
     vitaminA: number;
     vitaminD: number;
+    vitaminE: number;
+    vitaminK: number;
+    vitaminB1: number;
+    vitaminB2: number;
+    vitaminB3: number;
+    vitaminB5: number;
+    vitaminB6: number;
+    vitaminB7: number;
+    vitaminB9: number;
     vitaminB12: number;
     vitaminC: number;
   };
   totalMinerals: {
     calcium: number;
-    iron: number;
-    potassium: number;
+    phosphorus: number;
     magnesium: number;
+    sodium: number;
+    potassium: number;
+    sulfur: number;
+    chlorine: number;
+    iron: number;
+    copper: number;
+    zinc: number;
+    selenium: number;
+    manganese: number;
+    iodine: number;
+    cobalt: number;
+    molybdenum: number;
+    chromium: number;
   };
 }
 
@@ -178,14 +199,35 @@ export async function getNutrientsByDateRange(startDate: Date, endDate: Date): P
       totalVitamins: {
         vitaminA: acc.totalVitamins.vitaminA + meal.nutrients.vitamins.vitaminA,
         vitaminD: acc.totalVitamins.vitaminD + meal.nutrients.vitamins.vitaminD,
+        vitaminE: acc.totalVitamins.vitaminE + meal.nutrients.vitamins.vitaminE,
+        vitaminK: acc.totalVitamins.vitaminK + meal.nutrients.vitamins.vitaminK,
+        vitaminB1: acc.totalVitamins.vitaminB1 + meal.nutrients.vitamins.vitaminB1,
+        vitaminB2: acc.totalVitamins.vitaminB2 + meal.nutrients.vitamins.vitaminB2,
+        vitaminB3: acc.totalVitamins.vitaminB3 + meal.nutrients.vitamins.vitaminB3,
+        vitaminB5: acc.totalVitamins.vitaminB5 + meal.nutrients.vitamins.vitaminB5,
+        vitaminB6: acc.totalVitamins.vitaminB6 + meal.nutrients.vitamins.vitaminB6,
+        vitaminB7: acc.totalVitamins.vitaminB7 + meal.nutrients.vitamins.vitaminB7,
+        vitaminB9: acc.totalVitamins.vitaminB9 + meal.nutrients.vitamins.vitaminB9,
         vitaminB12: acc.totalVitamins.vitaminB12 + meal.nutrients.vitamins.vitaminB12,
         vitaminC: acc.totalVitamins.vitaminC + meal.nutrients.vitamins.vitaminC
       },
       totalMinerals: {
         calcium: acc.totalMinerals.calcium + meal.nutrients.minerals.calcium,
-        iron: acc.totalMinerals.iron + meal.nutrients.minerals.iron,
+        phosphorus: acc.totalMinerals.phosphorus + meal.nutrients.minerals.phosphorus,
+        magnesium: acc.totalMinerals.magnesium + meal.nutrients.minerals.magnesium,
+        sodium: acc.totalMinerals.sodium + meal.nutrients.minerals.sodium,
         potassium: acc.totalMinerals.potassium + meal.nutrients.minerals.potassium,
-        magnesium: acc.totalMinerals.magnesium + meal.nutrients.minerals.magnesium
+        sulfur: acc.totalMinerals.sulfur + meal.nutrients.minerals.sulfur,
+        chlorine: acc.totalMinerals.chlorine + meal.nutrients.minerals.chlorine,
+        iron: acc.totalMinerals.iron + meal.nutrients.minerals.iron,
+        copper: acc.totalMinerals.copper + meal.nutrients.minerals.copper,
+        zinc: acc.totalMinerals.zinc + meal.nutrients.minerals.zinc,
+        selenium: acc.totalMinerals.selenium + meal.nutrients.minerals.selenium,
+        manganese: acc.totalMinerals.manganese + meal.nutrients.minerals.manganese,
+        iodine: acc.totalMinerals.iodine + meal.nutrients.minerals.iodine,
+        cobalt: acc.totalMinerals.cobalt + meal.nutrients.minerals.cobalt,
+        molybdenum: acc.totalMinerals.molybdenum + meal.nutrients.minerals.molybdenum,
+        chromium: acc.totalMinerals.chromium + meal.nutrients.minerals.chromium
       }
     }), {
       totalCalories: 0,
@@ -195,14 +237,35 @@ export async function getNutrientsByDateRange(startDate: Date, endDate: Date): P
       totalVitamins: {
         vitaminA: 0,
         vitaminD: 0,
+        vitaminE: 0,
+        vitaminK: 0,
+        vitaminB1: 0,
+        vitaminB2: 0,
+        vitaminB3: 0,
+        vitaminB5: 0,
+        vitaminB6: 0,
+        vitaminB7: 0,
+        vitaminB9: 0,
         vitaminB12: 0,
         vitaminC: 0
       },
       totalMinerals: {
         calcium: 0,
-        iron: 0,
+        phosphorus: 0,
+        magnesium: 0,
+        sodium: 0,
         potassium: 0,
-        magnesium: 0
+        sulfur: 0,
+        chlorine: 0,
+        iron: 0,
+        copper: 0,
+        zinc: 0,
+        selenium: 0,
+        manganese: 0,
+        iodine: 0,
+        cobalt: 0,
+        molybdenum: 0,
+        chromium: 0
       }
     });
   } catch (error) {

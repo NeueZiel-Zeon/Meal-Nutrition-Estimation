@@ -3,11 +3,6 @@
 import { Card } from "@/components/ui/card";
 import { AnalysisResults } from "@/types/analysis";
 import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
   Tooltip,
   ResponsiveContainer,
   PieChart,
@@ -38,20 +33,21 @@ const NUTRIENT_NAMES = {
   vitaminC: 'ビタミンC',
   // ミネラル
   calcium: 'カルシウム',
-  magnesium: 'マグネシウム',
   phosphorus: 'リン',
-  potassium: 'カリウム',
+  magnesium: 'マグネシウム',
   sodium: 'ナトリウム',
-  chloride: '塩化物',
-  chromium: 'クロム',
+  potassium: 'カリウム',
+  sulfur: '硫黄',
+  chlorine: '塩素',
+  iron: '鉄',
   copper: '銅',
-  fluoride: 'フッ化物',
-  iodine: 'ヨウ素',
-  iron: '鉄分',
-  manganese: 'マンガン',
-  molybdenum: 'モリブデン',
+  zinc: '亜鉛',
   selenium: 'セレン',
-  zinc: '亜鉛'
+  manganese: 'マンガン',
+  iodine: 'ヨウ素',
+  cobalt: 'コバルト',
+  molybdenum: 'モリブデン',
+  chromium: 'クロム'
 } as const;
 
 // 栄養素の単位を定義
@@ -73,214 +69,23 @@ const NUTRIENT_UNITS = {
   },
   minerals: {
     calcium: 'mg',
-    magnesium: 'mg',
     phosphorus: 'mg',
-    potassium: 'mg',
+    magnesium: 'mg',
     sodium: 'mg',
-    chloride: 'mg',
-    chromium: 'μg',
-    copper: 'μg',
-    fluoride: 'mg',
-    iodine: 'μg',
+    potassium: 'mg',
+    sulfur: 'mg',
+    chlorine: 'mg',
     iron: 'mg',
-    manganese: 'mg',
-    molybdenum: 'μg',
+    copper: 'μg',
+    zinc: 'mg',
     selenium: 'μg',
-    zinc: 'mg'
+    manganese: 'mg',
+    iodine: 'μg',
+    cobalt: 'μg',
+    molybdenum: 'μg',
+    chromium: 'μg'
   }
 } as const;
-
-// 1日の推奨摂取量
-const RDI = {
-  male: {
-    vitamins: {
-      vitaminA: 900,  // μg
-      vitaminD: 15,   // μg
-      vitaminE: 15,   // mg
-      vitaminK: 120,  // μg
-      vitaminB1: 1.2, // mg
-      vitaminB2: 1.3, // mg
-      vitaminB3: 16,  // mg
-      vitaminB5: 5,   // mg
-      vitaminB6: 1.3, // mg
-      vitaminB7: 30,  // μg
-      vitaminB9: 400, // μg
-      vitaminB12: 2.4,// μg
-      vitaminC: 90    // mg
-    },
-    minerals: {
-      calcium: 1000,     // mg
-      magnesium: 400,    // mg
-      phosphorus: 700,    // mg
-      potassium: 3400,    // mg
-      sodium: 1500,       // mg
-      chloride: 2300,     // mg
-      chromium: 35,       // μg
-      copper: 900,        // μg
-      fluoride: 4,        // mg
-      iodine: 150,        // μg
-      iron: 8,            // mg
-      manganese: 2.3,     // mg
-      molybdenum: 45,     // μg
-      selenium: 55,       // μg
-      zinc: 11            // mg
-    }
-  },
-  female: {
-    vitamins: {
-      vitaminA: 700,  // μg
-      vitaminD: 15,   // μg
-      vitaminE: 15,   // mg
-      vitaminK: 90,   // μg
-      vitaminB1: 1.1, // mg
-      vitaminB2: 1.1, // mg
-      vitaminB3: 14,  // mg
-      vitaminB5: 5,   // mg
-      vitaminB6: 1.3, // mg
-      vitaminB7: 30,  // μg
-      vitaminB9: 400, // μg
-      vitaminB12: 2.4,// μg
-      vitaminC: 75    // mg
-    },
-    minerals: {
-      calcium: 1000,     // mg
-      magnesium: 310,    // mg
-      phosphorus: 700,    // mg
-      potassium: 2600,    // mg
-      sodium: 1500,       // mg
-      chloride: 2300,     // mg
-      chromium: 25,       // μg
-      copper: 900,        // μg
-      fluoride: 3,        // mg
-      iodine: 150,        // μg
-      iron: 18,           // mg
-      manganese: 1.8,     // mg
-      molybdenum: 45,     // μg
-      selenium: 55,       // μg
-      zinc: 8            // mg
-    }
-  }
-} as const;
-
-// 栄養素の分類定義
-const NUTRIENT_CATEGORIES = {
-  fatSolubleVitamins: {
-    title: '脂溶性ビタミン',
-    nutrients: ['vitaminA', 'vitaminD', 'vitaminE', 'vitaminK']
-  },
-  waterSolubleVitamins: {
-    title: '水溶性ビタミン',
-    nutrients: ['vitaminB1', 'vitaminB2', 'vitaminB3', 'vitaminB5', 'vitaminB6', 'vitaminB7', 'vitaminB9', 'vitaminB12', 'vitaminC']
-  },
-  macroMinerals: {
-    title: '多量ミネラル',
-    nutrients: ['calcium', 'magnesium', 'phosphorus', 'potassium', 'sodium', 'chloride']
-  },
-  traceMinerals: {
-    title: '微量ミネラル',
-    nutrients: ['chromium', 'copper', 'fluoride', 'iodine', 'iron', 'manganese', 'molybdenum', 'selenium', 'zinc']
-  }
-};
-
-// 単一の栄養素表示コンポーネント
-const NutrientDisplay = ({ 
-  name, 
-  value, 
-  unit, 
-  rdi, 
-  sufficiency 
-}: { 
-  name: string;
-  value: number;
-  unit: string;
-  rdi: number;
-  sufficiency: number;
-}) => (
-  <div className="text-center">
-    <p className="font-medium mb-2">{name}</p>
-    <p className="text-sm text-gray-500 mb-1">
-      {value}{unit}
-      <span className="text-xs ml-1">/ {rdi}{unit}</span>
-    </p>
-    <div className="flex justify-center gap-1">
-      {[...Array(5)].map((_, i) => (
-        <div
-          key={i}
-          className={`w-4 h-4 rounded ${
-            i < sufficiency ? 'bg-primary' : 'bg-gray-200'
-          }`}
-        />
-      ))}
-    </div>
-  </div>
-);
-
-// 栄養素カテゴリーコンポーネント
-const NutrientCategory = ({ title, nutrients, results, gender }: {
-  title: string;
-  nutrients: string[];
-  results: AnalysisResults;
-  gender: 'male' | 'female';
-}) => (
-  <div className="mb-6">
-    <h3 className="font-medium text-lg mb-3">{title}</h3>
-    <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-      {nutrients.map(name => {
-        const value = isVitamin(name)
-          ? results.nutrients.vitamins[name as keyof typeof results.nutrients.vitamins] ?? 0
-          : results.nutrients.minerals[name as keyof typeof results.nutrients.minerals] ?? 0;
-        
-        const unit = getUnit(name);
-        const rdi = getRDI(name, gender);
-        const sufficiency = calculateSufficiency(
-          isVitamin(name) ? 'vitamins' : 'minerals',
-          name,
-          value,
-          gender
-        );
-
-        return (
-          <NutrientDisplay
-            key={name}
-            name={NUTRIENT_NAMES[name as keyof typeof NUTRIENT_NAMES]}
-            value={value}
-            unit={unit}
-            rdi={rdi}
-            sufficiency={sufficiency}
-          />
-        );
-      })}
-    </div>
-  </div>
-);
-
-// ユーティリティ関数
-const getUnit = (nutrient: string) => {
-  if (nutrient in NUTRIENT_UNITS.vitamins) return NUTRIENT_UNITS.vitamins[nutrient as keyof typeof NUTRIENT_UNITS.vitamins];
-  return NUTRIENT_UNITS.minerals[nutrient as keyof typeof NUTRIENT_UNITS.minerals];
-};
-
-const isVitamin = (nutrient: string) => nutrient.startsWith('vitamin');
-
-// ユーティリティ関数に追加
-const calculateSufficiency = (
-  type: 'vitamins' | 'minerals',
-  name: string,
-  value: number,
-  gender: 'male' | 'female' = 'male'
-): number => {
-  const rdi = getRDI(name, gender);
-  const percentage = (value / rdi) * 100;
-  return Math.min(Math.floor(percentage / 20), 5);
-};
-
-const getRDI = (
-  name: string,
-  gender: 'male' | 'female'
-): number => {
-  if (name in RDI[gender].vitamins) return RDI[gender].vitamins[name as keyof typeof RDI.male.vitamins];
-  return RDI[gender].minerals[name as keyof typeof RDI.male.minerals];
-};
 
 // メインコンポーネント
 export function MealAnalysis({ results }: MealAnalysisProps) {
@@ -428,46 +233,6 @@ export function MealAnalysis({ results }: MealAnalysisProps) {
             </div>
           </div>
         </div>
-      </Card>
-
-      {/* 性別選択 */}
-      <Card className="p-6">
-      <div className="flex gap-4 justify-center mb-6">
-        <label className="flex items-center">
-          <input
-            type="radio"
-            name="gender"
-            value="male"
-            checked={gender === 'male'}
-            onChange={(e) => setGender(e.target.value as 'male' | 'female')}
-            className="mr-2"
-          />
-          男性
-        </label>
-        <label className="flex items-center">
-          <input
-            type="radio"
-            name="gender"
-            value="female"
-            checked={gender === 'female'}
-            onChange={(e) => setGender(e.target.value as 'male' | 'female')}
-            className="mr-2"
-          />
-          女性
-        </label>
-      </div>
-
-      {/* 栄養素カテゴリー */}
-        <h2 className="text-2xl font-bold mb-4">ビタミン・ミネラル充足度</h2>
-        {Object.entries(NUTRIENT_CATEGORIES).map(([key, category]) => (
-          <NutrientCategory
-            key={key}
-            title={category.title}
-            nutrients={category.nutrients}
-            results={results}
-            gender={gender}
-          />
-        ))}
       </Card>
 
       {/* 栄養バランスの改善点 */}

@@ -30,6 +30,7 @@ export async function POST(request: Request) {
       const response = await anthropic.messages.create({
         model: "claude-3-5-sonnet-20241022",
         max_tokens: 1024,
+        temperature: 0,
         messages: [{
           role: "user",
           content: [
@@ -75,20 +76,21 @@ export async function POST(request: Request) {
                         },
                         "minerals": {
                         "calcium": 数値,    // ミリグラム
+                        "phosphorus": 数値,    // ミリグラム
                         "magnesium": 数値,  // ミリグラム
-                        "phosphorus": 数値, // ミリグラム
+                        "sodium": 数値, // ミリグラム
                         "potassium": 数値,  // ミリグラム
-                        "sodium": 数値,     // ミリグラム
-                        "chloride": 数値,   // グラム
-                        "chromium": 数値,   // マイクログラム
-                        "copper": 数値,     // マイクログラム
-                        "fluoride": 数値,   // ミリグラム
-                        "iodine": 数値,     // マイクログラム
-                        "iron": 数値,       // ミリグラム
-                        "manganese": 数値,  // ミリグラム
-                        "molybdenum": 数値, // マイクログラム
-                        "selenium": 数値,   // マイクログラム
-                        "zinc": 数値        // ミリグラム
+                        "sulfur": 数値,     // ミリグラム
+                        "chlorine": 数値,   // マイクログラム
+                        "iron": 数値,   // ミリグラム
+                        "copper": 数値,     // ミリグラム
+                        "zinc": 数値,   // ミリグラム
+                        "selenium": 数値,     // マイクログラム
+                        "manganese": 数値,       // ミリグラム
+                        "iodine": 数値,  // ミリグラム
+                        "cobalt": 数値, // マイクログラム
+                        "molybdenum": 数値,   // マイクログラム
+                        "chromium": 数値        // ミリグラム
                         }
                     },
                     "deficientNutrients": ["ビタミンA", "カルシウム", ...],
