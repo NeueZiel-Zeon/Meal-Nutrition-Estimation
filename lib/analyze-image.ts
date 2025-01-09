@@ -92,6 +92,10 @@ export async function saveAnalysisResult(
       .from('meal-images')
       .getPublicUrl(fileName);
 
+    // 現在時刻をJSTで取得
+    const now = new Date();
+    const jstDate = new Date(now.getTime() + (9 * 60 * 60 * 1000));
+
     // 分析結果をDBに保存
     const { data, error } = await supabaseClient
       .from('meal_analyses')
@@ -106,7 +110,8 @@ export async function saveAnalysisResult(
           deficient_nutrients: results.deficientNutrients,
           excessive_nutrients: results.excessiveNutrients,
           improvements: results.improvements,
-          image_url: publicUrl
+          image_url: publicUrl,
+          created_at: jstDate.toISOString() // JSTのタイムスタンプを指定
         }
       ])
       .select();

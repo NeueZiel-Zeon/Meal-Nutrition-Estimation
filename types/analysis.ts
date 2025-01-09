@@ -30,10 +30,21 @@ export interface AnalysisResults {
     };
     minerals: {
       calcium: number;
-      iron: number;
-      potassium: number;
+      phosphorus: number;
       magnesium: number;
+      sodium: number;
+      potassium: number;
+      sulfur: number;
+      chlorine: number;
+      iron: number;
+      copper: number;
       zinc: number;
+      selenium: number;
+      manganese: number;
+      iodine: number;
+      cobalt: number;
+      molybdenum: number;
+      chromium: number;
     };
   };
   deficientNutrients: string[];

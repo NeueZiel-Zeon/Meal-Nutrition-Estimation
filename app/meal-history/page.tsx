@@ -3,15 +3,24 @@
 import { MainNav } from "@/components/dashboard/main-nav";
 import { Calendar } from "@/components/ui/calendar";
 import { Button } from "@/components/ui/button";
-import { LogOut } from "lucide-react";
+import { LogOut, ChevronLeft, ChevronRight } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useSupabase } from "@/components/providers/SupabaseProvider";
 import { useToast } from "@/components/ui/use-toast";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { getNutrientsByDateRange } from "@/lib/analyze-image";
 import { startOfMonth, endOfMonth, format } from "date-fns";
 import { ja } from "date-fns/locale";
 import Image from "next/image";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+
+interface MealRecord {
+  id: string;
+  created_at: string;
+  detected_dishes: string[];
+  food_items: string[];
+  calories: number;
+}
 
 export default function MealHistoryPage() {
   const router = useRouter();
@@ -20,44 +29,99 @@ export default function MealHistoryPage() {
   const [date, setDate] = useState<Date>(new Date());
   const [currentMonth, setCurrentMonth] = useState<Date>(new Date());
   const [caloriesByDate, setCaloriesByDate] = useState<{ [key: string]: number }>({});
+  const [selectedDayMeals, setSelectedDayMeals] = useState<MealRecord[]>([]);
+
+  const formatDateKey = useCallback((date: Date) => {
+    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+  }, []);
 
   useEffect(() => {
+    let isMounted = true;
+    
     const fetchMonthlyCalories = async () => {
-      const calendarStart = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1);
-      const calendarEnd = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0);
+      const firstDay = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1);
+      const lastDay = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0);
       
-      const firstDayOfMonth = calendarStart.getDay();
-      const lastDayOfMonth = calendarEnd.getDay();
+      const calendarStart = new Date(firstDay);
+      calendarStart.setDate(1 - firstDay.getDay());
       
-      const start = new Date(calendarStart);
-      start.setDate(start.getDate() - firstDayOfMonth);
-      
-      const end = new Date(calendarEnd);
-      end.setDate(end.getDate() + (6 - lastDayOfMonth));
+      const calendarEnd = new Date(lastDay);
+      calendarEnd.setDate(lastDay.getDate() + (6 - lastDay.getDay()));
       
       try {
         const { data, error } = await supabase
           .from('meal_analyses')
           .select('calories, created_at')
-          .gte('created_at', start.toISOString())
-          .lte('created_at', end.toISOString());
+          .filter('created_at', 'gte', calendarStart.toISOString())
+          .filter('created_at', 'lt', calendarEnd.toISOString());
 
         if (error) throw error;
+        
+        if (isMounted) {
+          const newCaloriesByDate = data.reduce((acc, meal) => {
+            const mealDate = new Date(meal.created_at);
+            const dateKey = formatDateKey(mealDate);
+            acc[dateKey] = (acc[dateKey] || 0) + meal.calories;
+            return acc;
+          }, {} as { [key: string]: number });
 
-        const newCaloriesByDate = data.reduce((acc, meal) => {
-          const dateKey = new Date(meal.created_at).toISOString().split('T')[0];
-          acc[dateKey] = (acc[dateKey] || 0) + meal.calories;
-          return acc;
-        }, {} as { [key: string]: number });
-
-        setCaloriesByDate(newCaloriesByDate);
+          setCaloriesByDate(newCaloriesByDate);
+        }
       } catch (error) {
         console.error('Failed to load nutrients:', error);
+        if (isMounted) {
+          toast({
+            title: "エラー",
+            description: "カロリーデータの取得に失敗しました",
+            variant: "destructive",
+          });
+        }
       }
     };
 
     fetchMonthlyCalories();
-  }, [currentMonth, supabase]);
+    
+    return () => {
+      isMounted = false;
+    };
+  }, [currentMonth, formatDateKey, supabase, toast]);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const fetchMealsForDate = async () => {
+      const dateKey = formatDateKey(date);
+      try {
+        const { data, error } = await supabase
+          .from('meal_analyses')
+          .select('id, created_at, detected_dishes, food_items, calories')
+          .filter('created_at', 'gte', `${dateKey}T00:00:00+09:00`)
+          .filter('created_at', 'lt', `${dateKey}T23:59:59+09:00`)
+          .order('created_at', { ascending: true });
+
+        if (error) throw error;
+        
+        if (isMounted) {
+          setSelectedDayMeals(data || []);
+        }
+      } catch (error) {
+        console.error('Failed to load meals:', error);
+        if (isMounted) {
+          toast({
+            title: "エラー",
+            description: "食事データの取得に失敗しました",
+            variant: "destructive",
+          });
+        }
+      }
+    };
+
+    fetchMealsForDate();
+    
+    return () => {
+      isMounted = false;
+    };
+  }, [date, formatDateKey, supabase, toast]);
 
   const handleLogout = async () => {
     try {
@@ -100,67 +164,132 @@ export default function MealHistoryPage() {
 
       <div className="flex-1 p-8 pt-6">
         <div className="flex items-center justify-between mb-8">
-          <h2 className="text-3xl font-bold tracking-tight">食事履歴</h2>
+          <h2 className="text-3xl font-bold tracking-tight">カレンダー</h2>
         </div>
 
-        <div className="flex gap-16">
-          <div className="bg-white rounded-lg p-6 border w-fit">
-            <div 
-              className="scale-[1.75] transform origin-top-left min-w-[320px]"
-              style={{ 
-                height: 'calc(400px * 1.75)',
-                width: 'calc(320px * 1.75)'
-              }}
-            >
-              <Calendar
-                mode="single"
-                selected={date}
-                onSelect={(newDate) => newDate && setDate(newDate)}
-                onMonthChange={setCurrentMonth}
-                month={currentMonth}
-                className="rounded-md"
-                components={{
-                  DayContent: ({ date: dayDate }) => {
-                    const dateKey = dayDate.toISOString().split('T')[0];
+        <div className="flex flex-col gap-6">
+          <Card className="w-full">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+              <CardTitle className="text-xl font-bold">
+                {format(currentMonth, 'yyyy年M月', { locale: ja })}
+              </CardTitle>
+              <div className="flex items-center space-x-2">
+                <button 
+                  className="p-2 hover:bg-gray-100 rounded-full"
+                  onClick={() => {
+                    const prevMonth = new Date(currentMonth);
+                    prevMonth.setMonth(prevMonth.getMonth() - 1);
+                    setCurrentMonth(prevMonth);
+                  }}
+                >
+                  <ChevronLeft className="h-5 w-5" />
+                </button>
+                <button 
+                  className="p-2 hover:bg-gray-100 rounded-full"
+                  onClick={() => {
+                    const nextMonth = new Date(currentMonth);
+                    nextMonth.setMonth(nextMonth.getMonth() + 1);
+                    setCurrentMonth(nextMonth);
+                  }}
+                >
+                  <ChevronRight className="h-5 w-5" />
+                </button>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-7 gap-1">
+                {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map(day => (
+                  <div key={day} className="text-center text-sm font-medium p-2">
+                    {day}
+                  </div>
+                ))}
+                {(() => {
+                  // 現在の月の最初の日
+                  const firstDay = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1);
+                  // 現在の月の最後の日
+                  const lastDay = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0);
+                  // 前月の日数を表示するための開始日
+                  const startDate = new Date(firstDay);
+                  startDate.setDate(1 - firstDay.getDay());
+                  
+                  // カレンダーに表示する週の数を計算
+                  const totalWeeks = Math.ceil((firstDay.getDay() + lastDay.getDate()) / 7);
+                  // 表示する日数を計算（週数 × 7）
+                  const totalDays = totalWeeks * 7;
+                  
+                  return Array.from({ length: totalDays }, (_, i) => {
+                    const currentDate = new Date(startDate);
+                    currentDate.setDate(startDate.getDate() + i);
+                    
+                    const dateKey = formatDateKey(currentDate);
                     const calories = caloriesByDate[dateKey];
-                    const isCurrentMonth = dayDate.getMonth() === currentMonth.getMonth();
+                    const isCurrentMonth = currentDate.getMonth() === currentMonth.getMonth();
+                    const isSelected = currentDate.toDateString() === date.toDateString();
                     
                     return (
-                      <div className="flex flex-col items-center py-2">
-                        <span className={`text-sm mb-1 ${!isCurrentMonth ? 'text-gray-400' : ''}`}>
-                          {dayDate.getDate()}
-                        </span>
-                        <span className={`text-[10px] ${!isCurrentMonth ? 'text-gray-400' : 'text-gray-500'}`}>
-                          {calories ? `${calories}kcal` : '0kcal'}
-                        </span>
+                      <div
+                        key={i}
+                        className={`
+                          relative p-2 text-center cursor-pointer hover:bg-gray-50 rounded-lg
+                          ${isSelected ? 'ring-2 ring-blue-500 bg-blue-50' : ''}
+                          ${!isCurrentMonth ? 'text-gray-400' : ''}
+                        `}
+                        onClick={() => setDate(currentDate)}
+                      >
+                        <div className="flex flex-col items-center">
+                          <span className="text-sm mb-1">{currentDate.getDate()}</span>
+                          <span className={`text-[10px] ${!isCurrentMonth ? 'text-gray-400' : 'text-gray-500'}`}>
+                            {calories ? `${calories}kcal` : '0kcal'}
+                          </span>
+                        </div>
                       </div>
                     );
-                  }
-                }}
-              />
-            </div>
-          </div>
-
-          <div className="bg-white rounded-lg p-6 border flex-1">
-            <h3 className="text-xl font-semibold mb-4">
-              {format(date, 'yyyy年M月d日 (E)', { locale: ja })}の食事
-            </h3>
-            <div className="flex items-center justify-between mb-2">
-              <p className="text-sm text-gray-600">
-                摂取カロリー: {caloriesByDate[date.toISOString().split('T')[0]] || 0}kcal
-              </p>
-            </div>
-            <div className="grid grid-cols-1 gap-4">
-              <div className="relative aspect-square rounded-md overflow-hidden border">
-                <Image
-                  src="/placeholder.png"
-                  alt="食事画像"
-                  fill
-                  className="object-cover"
-                />
+                  });
+                })()}
               </div>
-            </div>
-          </div>
+            </CardContent>
+          </Card>
+
+          <Card className="w-full">
+            <CardHeader>
+              <CardTitle className="text-xl font-bold">
+                {format(date, 'yyyy年M月d日', { locale: ja })}の食事記録
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {selectedDayMeals.length === 0 ? (
+                  <div className="text-center text-gray-500 py-4">
+                    この日の食事記録はありません
+                  </div>
+                ) : (
+                  selectedDayMeals.map((meal) => (
+                    <div key={meal.id} className="border-l-4 border-primary pl-4 py-2">
+                      <h3 className="font-semibold text-lg">
+                        {format(new Date(meal.created_at), 'HH:mm', { locale: ja })}
+                        {' '}({meal.calories}kcal)
+                      </h3>
+                      <p className="text-gray-600 mb-1">
+                        {meal.detected_dishes.join('、')}
+                      </p>
+                      <p className="text-sm text-gray-500">
+                        使用食材: {meal.food_items.join('、')}
+                      </p>
+                    </div>
+                  ))
+                )}
+
+                <div className="mt-6 p-4 bg-muted rounded-lg">
+                  <div className="flex justify-between items-center">
+                    <span className="font-semibold">合計カロリー</span>
+                    <span className="text-xl font-bold text-primary">
+                      {caloriesByDate[formatDateKey(date)] || 0}kcal
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </div>
       </div>
     </div>

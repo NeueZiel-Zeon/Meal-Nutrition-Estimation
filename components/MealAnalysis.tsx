@@ -87,6 +87,17 @@ const NUTRIENT_UNITS = {
   }
 } as const;
 
+// ミネラルの単位を処理するヘルパー関数を追加
+const formatMineralValue = (name: string, value: number) => {
+  // マイクログラム単位のミネラル
+  const microgramMinerals = ['chlorine', 'selenium', 'cobalt', 'molybdenum'];
+  
+  if (microgramMinerals.includes(name)) {
+    return `${value}μg`;
+  }
+  return `${value}mg`;
+};
+
 // メインコンポーネント
 export function MealAnalysis({ results }: MealAnalysisProps) {
   const [gender, setGender] = useState<'male' | 'female'>('male');
@@ -207,28 +218,38 @@ export function MealAnalysis({ results }: MealAnalysisProps) {
             </div>
 
             {/* ビタミン詳細 */}
-            <div>
-              <h3 className="font-semibold mb-2">ビタミン詳細</h3>
-              <div className="grid grid-cols-2 gap-2">
+            <div className="mt-4">
+              <h3 className="text-lg font-semibold mb-2">ビタミン詳細</h3>
+              <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
                 {Object.entries(results.nutrients.vitamins).map(([name, value]) => (
-                  <div key={name} className="flex justify-between">
-                    <span>{NUTRIENT_NAMES[name as keyof typeof NUTRIENT_NAMES]}</span>
-                    <span>{value}{NUTRIENT_UNITS.vitamins[name as keyof typeof NUTRIENT_UNITS.vitamins]}</span>
+                  <div key={name}>
+                    {NUTRIENT_NAMES[name as keyof typeof NUTRIENT_NAMES]}: {value}
+                    {NUTRIENT_UNITS.vitamins[name as keyof typeof NUTRIENT_UNITS.vitamins]}
                   </div>
                 ))}
               </div>
             </div>
 
             {/* ミネラル詳細 */}
-            <div>
-              <h3 className="font-semibold mb-2">ミネラル詳細</h3>
-              <div className="grid grid-cols-2 gap-2">
-                {Object.entries(results.nutrients.minerals).map(([name, value]) => (
-                  <div key={name} className="flex justify-between">
-                    <span>{NUTRIENT_NAMES[name as keyof typeof NUTRIENT_NAMES]}</span>
-                    <span>{value}{NUTRIENT_UNITS.minerals[name as keyof typeof NUTRIENT_UNITS.minerals]}</span>
-                  </div>
-                ))}
+            <div className="mt-4">
+              <h3 className="text-lg font-semibold mb-2">ミネラル詳細</h3>
+              <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
+                <div>カルシウム: {formatMineralValue('calcium', results.nutrients.minerals.calcium)}</div>
+                <div>リン: {formatMineralValue('phosphorus', results.nutrients.minerals.phosphorus)}</div>
+                <div>マグネシウム: {formatMineralValue('magnesium', results.nutrients.minerals.magnesium)}</div>
+                <div>ナトリウム: {formatMineralValue('sodium', results.nutrients.minerals.sodium)}</div>
+                <div>カリウム: {formatMineralValue('potassium', results.nutrients.minerals.potassium)}</div>
+                <div>硫黄: {formatMineralValue('sulfur', results.nutrients.minerals.sulfur)}</div>
+                <div>塩素: {formatMineralValue('chlorine', results.nutrients.minerals.chlorine)}</div>
+                <div>鉄: {formatMineralValue('iron', results.nutrients.minerals.iron)}</div>
+                <div>銅: {formatMineralValue('copper', results.nutrients.minerals.copper)}</div>
+                <div>亜鉛: {formatMineralValue('zinc', results.nutrients.minerals.zinc)}</div>
+                <div>セレン: {formatMineralValue('selenium', results.nutrients.minerals.selenium)}</div>
+                <div>マンガン: {formatMineralValue('manganese', results.nutrients.minerals.manganese)}</div>
+                <div>ヨウ素: {formatMineralValue('iodine', results.nutrients.minerals.iodine)}</div>
+                <div>コバルト: {formatMineralValue('cobalt', results.nutrients.minerals.cobalt)}</div>
+                <div>モリブデン: {formatMineralValue('molybdenum', results.nutrients.minerals.molybdenum)}</div>
+                <div>クロム: {formatMineralValue('chromium', results.nutrients.minerals.chromium)}</div>
               </div>
             </div>
           </div>

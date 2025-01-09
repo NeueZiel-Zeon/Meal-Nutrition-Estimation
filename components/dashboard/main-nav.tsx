@@ -58,7 +58,7 @@ export function MainNav({
             : "text-muted-foreground"
         )}
       >
-        食事履歴
+        カレンダー
       </Link>
     </nav>
   )
