@@ -71,11 +71,19 @@ export async function getImageContext(file: File): Promise<string> {
   }
 }
 
+// 日時を表示する際にUTCから日本時間に調整
+const adjustToJST = (utcDate: string) => {
+  const date = new Date(utcDate);
+  return new Date(date.getTime() + (9 * 60 * 60 * 1000));
+};
+
 export async function saveAnalysisResult(
   results: AnalysisResults,
   imageFile: File
 ) {
   try {
+    const now = new Date();
+
     // 画像をStorageにアップロード
     const fileName = `${Date.now()}-${imageFile.name}`;
     const { data: uploadData, error: uploadError } = await supabaseClient.storage
@@ -92,34 +100,31 @@ export async function saveAnalysisResult(
       .from('meal-images')
       .getPublicUrl(fileName);
 
-    // 現在時刻をJSTで取得
-    const now = new Date();
-    const jstDate = new Date(now.getTime() + (9 * 60 * 60 * 1000));
+    // ユーザーIDを取得
+    const { data: { user } } = await supabaseClient.auth.getUser();
 
     // 分析結果をDBに保存
     const { data, error } = await supabaseClient
       .from('meal_analyses')
-      .insert([
-        {
-          user_id: (await supabaseClient.auth.getUser()).data.user?.id,
-          detected_dishes: results.detectedDishes,
-          food_items: results.foodItems,
-          calories: results.calories,
-          portions: results.portions,
-          nutrients: results.nutrients,
-          deficient_nutrients: results.deficientNutrients,
-          excessive_nutrients: results.excessiveNutrients,
-          improvements: results.improvements,
-          image_url: publicUrl,
-          created_at: jstDate.toISOString() // JSTのタイムスタンプを指定
-        }
-      ])
-      .select();
+      .insert({
+        user_id: user?.id,
+        detected_dishes: results.detectedDishes,
+        food_items: results.foodItems,
+        calories: results.calories,
+        portions: results.portions,
+        nutrients: results.nutrients,
+        deficient_nutrients: results.deficientNutrients,
+        excessive_nutrients: results.excessiveNutrients,
+        improvements: results.improvements,
+        image_url: publicUrl,
+        image_base64: results.imageBase64,
+        created_at: now.toISOString()
+      });
 
     if (error) throw error;
     return data;
   } catch (error) {
-    console.error('Error saving analysis:', error);
+    console.error('Error saving analysis result:', error);
     throw error;
   }
 }

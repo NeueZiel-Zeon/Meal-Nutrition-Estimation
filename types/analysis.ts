@@ -50,6 +50,7 @@ export interface AnalysisResults {
   deficientNutrients: string[];
   excessiveNutrients: string[];
   improvements: string[];
+  imageBase64?: string;
 }
 
 export interface Message {
