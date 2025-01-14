@@ -3,6 +3,7 @@ import { AnalysisResults, Message } from "@/types/analysis";
 interface ChatContext {
   context: string;
   imageData?: string;
+  analysisResults: AnalysisResults;
 }
 
 async function compressImage(base64Data: string): Promise<string> {
@@ -133,4 +134,18 @@ export function exportChatHistory(messages: Message[]): string {
         }`
     )
     .join("\n");
+}
+
+async function generatePrompt(input: string, context: ChatContext): Promise<string> {
+  const { analysisResults } = context;
+  
+  return `
+    \n検出された料理：
+    ${analysisResults.detectedDishes.join('、')}
+
+    \n詳細な分析結果：
+    ${JSON.stringify(analysisResults)}
+
+    \nユーザーの質問：${input}
+  `;
 }

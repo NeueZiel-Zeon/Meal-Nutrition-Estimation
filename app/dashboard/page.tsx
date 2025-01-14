@@ -17,6 +17,9 @@ import { useToast } from "@/components/ui/use-toast";
 import { useState, useEffect } from "react";
 import { NutrientSummary, getNutrientsByDateRange } from "@/lib/analyze-image";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
+import { ImageUpload } from "@/components/ImageUpload";
+import { analyzeImage, saveAnalysisResult } from "@/lib/analyze-image";
+import { AnalysisResults } from "@/types/analysis";
 
 interface ExtendedNutrientSummary extends NutrientSummary {
   totalVitamins: {
@@ -208,6 +211,11 @@ const formatMineralValue = (name: string, value: number) => {
   return `${value}mg`;
 };
 
+// 栄養素の値を小数点第3位までフォーマットする関数
+const formatNutrientValue = (value: number): string => {
+  return Number(value.toFixed(3)).toString();
+};
+
 export default function DashboardPage() {
   const router = useRouter();
   const { supabase } = useSupabase();
@@ -254,6 +262,9 @@ export default function DashboardPage() {
   const [gender, setGender] = useState<'male' | 'female'>('male');
   const [showVitaminDetails, setShowVitaminDetails] = useState(false);
   const [showMineralDetails, setShowMineralDetails] = useState(false);
+  const [selectedImage, setSelectedImage] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
 
   useEffect(() => {
     const loadTodayNutrients = async () => {
@@ -304,6 +315,53 @@ export default function DashboardPage() {
     { name: "ミネラル", value: calculateTotalNutrients().mineralTotal, color: "#8884d8", percentage: (calculateTotalNutrients().mineralTotal / (nutrients.totalProtein + nutrients.totalCarbs + nutrients.totalFat) * 100).toFixed(1) }
   ];
 
+  const handleImageSelect = async (file: File) => {
+    setSelectedImage(file);
+    const url = URL.createObjectURL(file);
+    setPreviewUrl(url);
+  };
+
+  const handleAnalyze = async () => {
+    if (!selectedImage) return;
+    setIsAnalyzing(true);
+    
+    try {
+      const results = await analyzeImage(selectedImage);
+      
+      // 画像をBase64に変換
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const base64String = reader.result as string;
+        const base64Data = base64String.split(',')[1];
+        
+        // LocalStorageにデータを保存
+        localStorage.setItem('analysisResults', JSON.stringify(results));
+        localStorage.setItem('analysisImage', JSON.stringify({
+          name: selectedImage.name,
+          type: selectedImage.type,
+          data: base64Data
+        }));
+        
+        router.push('/meal-analysis?tab=analysis');
+      };
+      reader.readAsDataURL(selectedImage);
+      
+      toast({
+        title: "分析完了",
+        description: "結果が保存されました",
+      });
+    } catch (error) {
+      console.error('分析エラー:', error);
+      toast({
+        title: "エラー",
+        description: error instanceof Error ? error.message : "分析に失敗しました",
+        variant: "destructive"
+      });
+    } finally {
+      setIsAnalyzing(false);
+    }
+  };
+
   return (
     <div className="flex-col md:flex">
       <div className="border-b">
@@ -326,6 +384,32 @@ export default function DashboardPage() {
         <div className="flex items-center justify-between space-y-2">
           <h2 className="text-3xl font-bold tracking-tight">今日の食事概要</h2>
         </div>
+
+        <Card className="col-span-4">
+          <CardHeader>
+            <CardTitle>食事画像のアップロード</CardTitle>
+            <CardDescription>
+              分析したい食事の画像をアップロードしてください
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <ImageUpload
+                onImageSelect={handleImageSelect}
+                previewUrl={previewUrl}
+              />
+              <div className="flex justify-center">
+                <Button
+                  onClick={handleAnalyze}
+                  disabled={!selectedImage || isAnalyzing}
+                  className="w-full max-w-sm"
+                >
+                  {isAnalyzing ? "分析中..." : "分析開始"}
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
         <Card>
           <CardHeader>
@@ -392,20 +476,20 @@ export default function DashboardPage() {
                     {showVitaminDetails ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
                   </button>
                   {showVitaminDetails && (
-                    <div className="grid grid-cols-2 gap-2 text-sm">
-                      <div>ビタミンA: {nutrients.totalVitamins.vitaminA || 0}μg</div>
-                      <div>ビタミンD: {nutrients.totalVitamins.vitaminD || 0}μg</div>
-                      <div>ビタミンE: {nutrients.totalVitamins.vitaminE || 0}mg</div>
-                      <div>ビタミンK: {nutrients.totalVitamins.vitaminK || 0}μg</div>
-                      <div>ビタミンB1: {nutrients.totalVitamins.vitaminB1 || 0}mg</div>
-                      <div>ビタミンB2: {nutrients.totalVitamins.vitaminB2 || 0}mg</div>
-                      <div>ビタミンB3: {nutrients.totalVitamins.vitaminB3 || 0}mg</div>
-                      <div>ビタミンB5: {nutrients.totalVitamins.vitaminB5 || 0}mg</div>
-                      <div>ビタミンB6: {nutrients.totalVitamins.vitaminB6 || 0}mg</div>
-                      <div>ビタミンB7: {nutrients.totalVitamins.vitaminB7 || 0}μg</div>
-                      <div>ビタミンB9: {nutrients.totalVitamins.vitaminB9 || 0}μg</div>
-                      <div>ビタミンB12: {nutrients.totalVitamins.vitaminB12 || 0}μg</div>
-                      <div>ビタミンC: {nutrients.totalVitamins.vitaminC || 0}mg</div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
+                      <div>ビタミンA: {formatNutrientValue(nutrients.totalVitamins.vitaminA)}μg</div>
+                      <div>ビタミンD: {formatNutrientValue(nutrients.totalVitamins.vitaminD)}μg</div>
+                      <div>ビタミンE: {formatNutrientValue(nutrients.totalVitamins.vitaminE)}mg</div>
+                      <div>ビタミンK: {formatNutrientValue(nutrients.totalVitamins.vitaminK)}μg</div>
+                      <div>ビタミンB1: {formatNutrientValue(nutrients.totalVitamins.vitaminB1)}mg</div>
+                      <div>ビタミンB2: {formatNutrientValue(nutrients.totalVitamins.vitaminB2)}mg</div>
+                      <div>ビタミンB3: {formatNutrientValue(nutrients.totalVitamins.vitaminB3)}mg</div>
+                      <div>ビタミンB5: {formatNutrientValue(nutrients.totalVitamins.vitaminB5)}mg</div>
+                      <div>ビタミンB6: {formatNutrientValue(nutrients.totalVitamins.vitaminB6)}mg</div>
+                      <div>ビタミンB7: {formatNutrientValue(nutrients.totalVitamins.vitaminB7)}μg</div>
+                      <div>ビタミンB9: {formatNutrientValue(nutrients.totalVitamins.vitaminB9)}μg</div>
+                      <div>ビタミンB12: {formatNutrientValue(nutrients.totalVitamins.vitaminB12)}μg</div>
+                      <div>ビタミンC: {formatNutrientValue(nutrients.totalVitamins.vitaminC)}mg</div>
                     </div>
                   )}
                 </div>
@@ -420,23 +504,23 @@ export default function DashboardPage() {
                     {showMineralDetails ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
                   </button>
                   {showMineralDetails && (
-                    <div className="grid grid-cols-2 gap-2 text-sm">
-                      <div>カルシウム: {formatMineralValue('calcium', nutrients.totalMinerals.calcium || 0)}</div>
-                      <div>リン: {formatMineralValue('phosphorus', nutrients.totalMinerals.phosphorus || 0)}</div>
-                      <div>マグネシウム: {formatMineralValue('magnesium', nutrients.totalMinerals.magnesium || 0)}</div>
-                      <div>ナトリウム: {formatMineralValue('sodium', nutrients.totalMinerals.sodium || 0)}</div>
-                      <div>カリウム: {formatMineralValue('potassium', nutrients.totalMinerals.potassium || 0)}</div>
-                      <div>硫黄: {formatMineralValue('sulfur', nutrients.totalMinerals.sulfur || 0)}</div>
-                      <div>塩素: {formatMineralValue('chlorine', nutrients.totalMinerals.chlorine || 0)}</div>
-                      <div>鉄: {formatMineralValue('iron', nutrients.totalMinerals.iron || 0)}</div>
-                      <div>銅: {formatMineralValue('copper', nutrients.totalMinerals.copper || 0)}</div>
-                      <div>亜鉛: {formatMineralValue('zinc', nutrients.totalMinerals.zinc || 0)}</div>
-                      <div>セレン: {formatMineralValue('selenium', nutrients.totalMinerals.selenium || 0)}</div>
-                      <div>マンガン: {formatMineralValue('manganese', nutrients.totalMinerals.manganese || 0)}</div>
-                      <div>ヨウ素: {formatMineralValue('iodine', nutrients.totalMinerals.iodine || 0)}</div>
-                      <div>コバルト: {formatMineralValue('cobalt', nutrients.totalMinerals.cobalt || 0)}</div>
-                      <div>モリブデン: {formatMineralValue('molybdenum', nutrients.totalMinerals.molybdenum || 0)}</div>
-                      <div>クロム: {formatMineralValue('chromium', nutrients.totalMinerals.chromium || 0)}</div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
+                      <div>カルシウム: {formatNutrientValue(nutrients.totalMinerals.calcium)}mg</div>
+                      <div>リン: {formatNutrientValue(nutrients.totalMinerals.phosphorus)}mg</div>
+                      <div>マグネシウム: {formatNutrientValue(nutrients.totalMinerals.magnesium)}mg</div>
+                      <div>ナトリウム: {formatNutrientValue(nutrients.totalMinerals.sodium)}mg</div>
+                      <div>カリウム: {formatNutrientValue(nutrients.totalMinerals.potassium)}mg</div>
+                      <div>硫黄: {formatNutrientValue(nutrients.totalMinerals.sulfur)}mg</div>
+                      <div>塩素: {formatNutrientValue(nutrients.totalMinerals.chlorine)}mg</div>
+                      <div>鉄: {formatNutrientValue(nutrients.totalMinerals.iron)}mg</div>
+                      <div>銅: {formatNutrientValue(nutrients.totalMinerals.copper)}mg</div>
+                      <div>亜鉛: {formatNutrientValue(nutrients.totalMinerals.zinc)}mg</div>
+                      <div>セレン: {formatNutrientValue(nutrients.totalMinerals.selenium)}mg</div>
+                      <div>マンガン: {formatNutrientValue(nutrients.totalMinerals.manganese)}mg</div>
+                      <div>ヨウ素: {formatNutrientValue(nutrients.totalMinerals.iodine)}mg</div>
+                      <div>コバルト: {formatNutrientValue(nutrients.totalMinerals.cobalt)}mg</div>
+                      <div>モリブデン: {formatNutrientValue(nutrients.totalMinerals.molybdenum)}mg</div>
+                      <div>クロム: {formatNutrientValue(nutrients.totalMinerals.chromium)}mg</div>
                     </div>
                   )}
                 </div>

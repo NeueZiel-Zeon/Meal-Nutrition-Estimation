@@ -28,17 +28,6 @@ export function MainNav({
         ホーム
       </Link>
       <Link
-        href="/meal-management"
-        className={cn(
-          "text-sm font-medium transition-colors hover:text-primary",
-          pathname === "/meal-management"
-            ? "text-primary font-bold"
-            : "text-muted-foreground"
-        )}
-      >
-        食事管理
-      </Link>
-      <Link
         href="/meal-analysis"
         className={cn(
           "text-sm font-medium transition-colors hover:text-primary",

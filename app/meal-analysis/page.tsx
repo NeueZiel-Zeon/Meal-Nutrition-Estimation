@@ -1,7 +1,7 @@
 "use client";
 
 import { Upload, LogOut } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -12,7 +12,7 @@ import { AnalysisResults } from "@/types/analysis";
 import { analyzeImage, getImageContext, saveAnalysisResult } from "@/lib/analyze-image";
 import { generateAIResponse } from "@/lib/chat-utils";
 import { getServerClient } from '@/lib/supabase/server';
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useSupabase } from "@/components/providers/SupabaseProvider";
 import { useToast } from "@/components/ui/use-toast";
 import { AnalysisHistory } from "@/components/AnalysisHistory";
@@ -20,56 +20,54 @@ import { MainNav } from "@/components/dashboard/main-nav";
 
 export default function Home() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const tab = searchParams.get('tab');
   const { supabase } = useSupabase();
   const { toast } = useToast();
-  const [selectedImage, setSelectedImage] = useState<File | null>(null);
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [imageBase64, setImageBase64] = useState<string | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisResults, setAnalysisResults] = useState<AnalysisResults | null>(null);
   const [imageContext, setImageContext] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState("upload");
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [isAnalysisSaved, setIsAnalysisSaved] = useState(false);
+  const [savedAnalysisId, setSavedAnalysisId] = useState<string | null>(null);
 
-  const handleImageSelect = async (file: File) => {
-    setSelectedImage(file);
-    const url = URL.createObjectURL(file);
-    setPreviewUrl(url);
-
-    // 画像をBase64に変換して保存
-    const bytes = await file.arrayBuffer();
-    const base64 = Buffer.from(bytes).toString('base64');
-    setImageBase64(base64);
-  };
-
-  const handleAnalyze = async () => {
-    if (!selectedImage) return;
-    setIsAnalyzing(true);
-    
-    try {
-      // 分析実行
-      const results = await analyzeImage(selectedImage);
-      
-      // 分析結果と画像を保存
-      await saveAnalysisResult(results, selectedImage);
-      
-      setAnalysisResults(results);
-      setActiveTab("analysis");
-      
-      toast({
-        title: "分析完了",
-        description: "結果が保存されました",
-      });
-    } catch (error) {
-      console.error('分析エラー:', error);
-      toast({
-        title: "エラー",
-        description: error instanceof Error ? error.message : "分析に失敗しました",
-        variant: "destructive"
-      });
-    } finally {
-      setIsAnalyzing(false);
+  useEffect(() => {
+    if (tab) {
+      setActiveTab(tab);
     }
-  };
+  }, [tab]);
+
+  useEffect(() => {
+    if (tab === 'analysis') {
+      try {
+        // LocalStorageからデータを取得
+        const storedResults = localStorage.getItem('analysisResults');
+        const storedImage = localStorage.getItem('analysisImage');
+        
+        if (storedResults) {
+          setAnalysisResults(JSON.parse(storedResults));
+        }
+        
+        if (storedImage) {
+          const imageData = JSON.parse(storedImage);
+          const blob = new Blob(
+            [Uint8Array.from(atob(imageData.data), c => c.charCodeAt(0))],
+            { type: imageData.type }
+          );
+          const file = new File([blob], imageData.name, { type: imageData.type });
+          setImageFile(file);
+        }
+        
+        // データを使用後はLocalStorageから削除
+        localStorage.removeItem('analysisResults');
+        localStorage.removeItem('analysisImage');
+      } catch (error) {
+        console.error('Failed to parse analysis results:', error);
+      }
+    }
+  }, [searchParams, tab]);
 
   const handleLogout = async () => {
     try {
@@ -88,6 +86,26 @@ export default function Home() {
         description: error.message,
         variant: "destructive",
       });
+    }
+  };
+
+  const handleAnalysisSave = async () => {
+    setIsAnalysisSaved(true);
+    // 最新の分析結果をDBから取得
+    try {
+      const { data: latestAnalysis } = await supabase
+        .from('meal_analyses')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single();
+      
+      if (latestAnalysis) {
+        setAnalysisResults(latestAnalysis);
+        setSavedAnalysisId(latestAnalysis.id);
+      }
+    } catch (error) {
+      console.error('Error fetching saved analysis:', error);
     }
   };
 
@@ -111,43 +129,33 @@ export default function Home() {
       </div>
 
       <div className="container mx-auto px-4 py-8">
-        <h1 className="text-4xl font-bold text-center mb-8">食事分析システム</h1>
+        <h1 className="text-4xl font-bold text-center mb-8">食事分析結果</h1>
         
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="max-w-4xl mx-auto">
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="upload">画像アップロード</TabsTrigger>
-            <TabsTrigger value="analysis" disabled={!analysisResults}>分析結果</TabsTrigger>
-            <TabsTrigger value="chat" disabled={!analysisResults}>AIアシスタント</TabsTrigger>
+        <Tabs defaultValue="analysis" className="max-w-4xl mx-auto">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="analysis">分析結果</TabsTrigger>
+            <TabsTrigger value="chat" disabled={!isAnalysisSaved}>
+              AIアシスタント
+              {!isAnalysisSaved && <span className="ml-2 text-xs">(保存後に利用可能)</span>}
+            </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="upload">
-            <Card className="p-6">
-              <ImageUpload
-                onImageSelect={handleImageSelect}
-                previewUrl={previewUrl}
-              />
-              
-              <div className="mt-6 flex justify-center">
-                <Button
-                  onClick={handleAnalyze}
-                  disabled={!selectedImage || isAnalyzing}
-                  className="w-full max-w-sm"
-                >
-                  {isAnalyzing ? "分析中..." : "分析開始"}
-                </Button>
-              </div>
-            </Card>
-          </TabsContent>
-
           <TabsContent value="analysis">
-            {analysisResults && <MealAnalysis results={analysisResults} />}
+            {analysisResults && (
+              <MealAnalysis 
+                results={analysisResults} 
+                imageFile={imageFile || undefined}
+                onSaveComplete={handleAnalysisSave}
+              />
+            )}
           </TabsContent>
 
           <TabsContent value="chat">
-            {analysisResults && (
+            {isAnalysisSaved && analysisResults && (
               <ChatInterface 
                 analysisResults={analysisResults}
                 imageData={imageBase64}
+                analysisId={savedAnalysisId}
               />
             )}
           </TabsContent>

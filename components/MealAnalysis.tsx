@@ -2,6 +2,10 @@
 
 import { Card } from "@/components/ui/card";
 import { AnalysisResults } from "@/types/analysis";
+import { Button } from "@/components/ui/button";
+import { saveAnalysisResult } from "@/lib/analyze-image";
+import { useToast } from "@/components/ui/use-toast";
+import { useState } from "react";
 import {
   Tooltip,
   ResponsiveContainer,
@@ -9,10 +13,11 @@ import {
   Pie,
   Cell,
 } from "recharts";
-import { useState } from "react";
 
 interface MealAnalysisProps {
   results: AnalysisResults;
+  imageFile?: File;
+  onSaveComplete?: () => void;
 }
 
 // 栄養素名の日本語マッピング
@@ -99,8 +104,43 @@ const formatMineralValue = (name: string, value: number) => {
 };
 
 // メインコンポーネント
-export function MealAnalysis({ results }: MealAnalysisProps) {
-  const [gender, setGender] = useState<'male' | 'female'>('male');
+export function MealAnalysis({ results, imageFile, onSaveComplete }: MealAnalysisProps) {
+  const { toast } = useToast();
+  const [isSaving, setIsSaving] = useState(false);
+  const [isSaved, setIsSaved] = useState(false);
+
+  const handleSave = async () => {
+    if (!imageFile) {
+      toast({
+        title: "エラー",
+        description: "画像ファイルが見つかりません",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    setIsSaving(true);
+    try {
+      await saveAnalysisResult(results, imageFile);
+      setIsSaved(true);
+      toast({
+        title: "保存完了",
+        description: "分析結果を保存しました",
+      });
+      if (onSaveComplete) {
+        onSaveComplete();
+      }
+    } catch (error) {
+      console.error('保存エラー:', error);
+      toast({
+        title: "エラー",
+        description: "保存に失敗しました",
+        variant: "destructive"
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   // ミリグラムをグラムに変換（1mg = 0.001g）
   const vitaminTotal = Object.values(results.nutrients.vitamins)
@@ -134,6 +174,16 @@ export function MealAnalysis({ results }: MealAnalysisProps) {
 
   return (
     <div className="space-y-6">
+      {/* 保存ボタン */}
+      <div className="flex justify-end">
+        <Button 
+          onClick={handleSave}
+          disabled={isSaving}
+        >
+          {isSaving ? "保存中..." : "分析結果を保存"}
+        </Button>
+      </div>
+
       {/* 検出された料理 */}
       <Card className="p-6">
         <h2 className="text-2xl font-bold mb-4">検出された料理</h2>
@@ -261,7 +311,7 @@ export function MealAnalysis({ results }: MealAnalysisProps) {
         <h2 className="text-2xl font-bold mb-4">栄養バランスの改善点</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* 不足している栄養素 */}
-          {results.deficientNutrients.length > 0 && (
+          {results.deficientNutrients?.length > 0 && (
             <div>
               <h3 className="text-xl font-semibold mb-2 text-yellow-600">
                 不足している栄養素
@@ -275,7 +325,7 @@ export function MealAnalysis({ results }: MealAnalysisProps) {
           )}
 
           {/* 過剰な栄養素 */}
-          {results.excessiveNutrients.length > 0 && (
+          {results.excessiveNutrients?.length > 0 && (
             <div>
               <h3 className="text-xl font-semibold mb-2 text-red-600">
                 過剰な栄養素

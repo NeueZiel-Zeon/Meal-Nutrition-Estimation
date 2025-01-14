@@ -12,6 +12,7 @@ import { generateAIResponse } from "@/lib/chat-utils";
 interface ChatInterfaceProps {
   analysisResults: AnalysisResults;
   imageData: string | null | undefined;
+  analysisId: string | null;
 }
 
 export function ChatInterface({
@@ -32,15 +33,9 @@ export function ChatInterface({
 
     try {
       setIsLoading(true);
-      console.log(
-        "リクエストサイズ:",
-        new Blob([
-          JSON.stringify({
-            input,
-            imageData,
-          }),
-        ]).size
-      );
+      const formData = new FormData();
+      formData.append("message", input);
+      formData.append("analysisData", JSON.stringify(analysisResults));
 
       const userMessage: Message = {
         id: Date.now().toString(),
@@ -52,19 +47,21 @@ export function ChatInterface({
       setMessages((prev) => [...prev, userMessage]);
       setInput("");
 
-      const response = await generateAIResponse(
-        input,
-        {
-          analysisJson: analysisResults,
-          imageData: imageData || undefined,
-        },
-        "chat"
-      );
+      const response = await fetch("/api/chat", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error(`API Error: ${response.status}`);
+      }
+
+      const data = await response.json();
 
       const aiMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: "assistant",
-        content: response,
+        content: data.response,
         timestamp: Date.now(),
       };
       setMessages((prev) => [...prev, aiMessage]);
