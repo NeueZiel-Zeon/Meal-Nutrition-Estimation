@@ -20,6 +20,24 @@ interface MealRecord {
   detected_dishes: string[];
   food_items: string[];
   calories: number;
+  portions: {
+    [key: string]: number;
+  };
+  nutrients: {
+    protein: number;
+    fat: number;
+    carbs: number;
+    vitamins: {
+      [key: string]: number;
+    };
+    minerals: {
+      [key: string]: number;
+    };
+  };
+  deficient_nutrients: string[];
+  excessive_nutrients: string[];
+  improvements: string[];
+  image_url?: string;
 }
 
 export default function MealHistoryPage() {
@@ -94,7 +112,19 @@ export default function MealHistoryPage() {
       try {
         const { data, error } = await supabase
           .from('meal_analyses')
-          .select('id, created_at, detected_dishes, food_items, calories')
+          .select(`
+            id,
+            created_at,
+            detected_dishes,
+            food_items,
+            calories,
+            portions,
+            nutrients,
+            deficient_nutrients,
+            excessive_nutrients,
+            improvements,
+            image_url
+          `)
           .filter('created_at', 'gte', `${dateKey}T00:00:00+09:00`)
           .filter('created_at', 'lt', `${dateKey}T23:59:59+09:00`)
           .order('created_at', { ascending: true });
@@ -141,6 +171,22 @@ export default function MealHistoryPage() {
         variant: "destructive",
       });
     }
+  };
+
+  const handleMealClick = (meal: MealRecord) => {
+    localStorage.setItem('analysisResults', JSON.stringify({
+      detectedDishes: meal.detected_dishes,
+      foodItems: meal.food_items,
+      calories: meal.calories,
+      nutrients: meal.nutrients,
+      deficientNutrients: meal.deficient_nutrients,
+      excessiveNutrients: meal.excessive_nutrients,
+      improvements: meal.improvements,
+      image_url: meal.image_url,
+      portions: meal.portions || {}
+    }));
+    
+    router.push(`/meal-analysis?tab=analysis&id=${meal.id}`);
   };
 
   return (
@@ -264,7 +310,11 @@ export default function MealHistoryPage() {
                   </div>
                 ) : (
                   selectedDayMeals.map((meal) => (
-                    <div key={meal.id} className="border-l-4 border-primary pl-4 py-2">
+                    <div 
+                      key={meal.id} 
+                      className="border-l-4 border-primary pl-4 py-2 cursor-pointer hover:bg-gray-50"
+                      onClick={() => handleMealClick(meal)}
+                    >
                       <h3 className="font-semibold text-lg">
                         {format(new Date(meal.created_at), 'HH:mm', { locale: ja })}
                         {' '}({meal.calories}kcal)

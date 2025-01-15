@@ -265,6 +265,7 @@ export default function DashboardPage() {
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [dishName, setDishName] = useState<string>('');
 
   useEffect(() => {
     const loadTodayNutrients = async () => {
@@ -315,10 +316,9 @@ export default function DashboardPage() {
     { name: "ミネラル", value: calculateTotalNutrients().mineralTotal, color: "#8884d8", percentage: (calculateTotalNutrients().mineralTotal / (nutrients.totalProtein + nutrients.totalCarbs + nutrients.totalFat) * 100).toFixed(1) }
   ];
 
-  const handleImageSelect = async (file: File) => {
+  const handleImageSelect = (file: File) => {
     setSelectedImage(file);
-    const url = URL.createObjectURL(file);
-    setPreviewUrl(url);
+    setPreviewUrl(URL.createObjectURL(file));
   };
 
   const handleAnalyze = async () => {
@@ -326,7 +326,13 @@ export default function DashboardPage() {
     setIsAnalyzing(true);
     
     try {
-      const results = await analyzeImage(selectedImage);
+      const formData = new FormData();
+      formData.append('file', selectedImage);
+      if (dishName.trim()) {
+        formData.append('dishName', dishName.trim());
+      }
+      
+      const results = await analyzeImage(selectedImage, dishName.trim());
       
       // 画像をBase64に変換
       const reader = new FileReader();
@@ -382,10 +388,6 @@ export default function DashboardPage() {
         </div>
       </div>
       <div className="flex-1 space-y-4 p-8 pt-6">
-        <div className="flex items-center justify-between space-y-2">
-          <h2 className="text-3xl font-bold tracking-tight">今日の食事概要</h2>
-        </div>
-
         <Card className="col-span-4">
           <CardHeader>
             <CardTitle>食事画像のアップロード</CardTitle>
@@ -398,6 +400,8 @@ export default function DashboardPage() {
               <ImageUpload
                 onImageSelect={handleImageSelect}
                 previewUrl={previewUrl}
+                dishName={dishName}
+                onDishNameChange={setDishName}
               />
               <div className="flex justify-center">
                 <Button
@@ -411,6 +415,10 @@ export default function DashboardPage() {
             </div>
           </CardContent>
         </Card>
+
+        <div className="flex items-center justify-between space-y-2">
+          <h2 className="text-3xl font-bold tracking-tight">今日の食事概要</h2>
+        </div>
 
         <Card>
           <CardHeader>

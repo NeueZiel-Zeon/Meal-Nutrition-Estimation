@@ -14,7 +14,13 @@ export async function middleware(req: NextRequest) {
   console.log('Middleware: Session exists:', !!session);
 
   // 認証が必要なパスの配列
-  const authRequiredPaths = ['/meal-analysis'];
+  const authRequiredPaths = ['/meal-analysis', '/dashboard', '/meal-history'];
+
+  // 食事分析ページへの直接アクセスを制限
+  if (req.nextUrl.pathname.startsWith('/meal-analysis') && 
+      !req.nextUrl.searchParams.has('tab')) {
+    return NextResponse.redirect(new URL('/dashboard', req.url));
+  }
 
   // 現在のパスが認証必要なパスかチェック
   const isAuthRequired = authRequiredPaths.some(path => 

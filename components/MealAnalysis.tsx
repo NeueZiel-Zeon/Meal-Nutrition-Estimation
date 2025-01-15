@@ -18,6 +18,7 @@ interface MealAnalysisProps {
   results: AnalysisResults;
   imageFile?: File;
   onSaveComplete?: () => void;
+  hideButton?: boolean;
 }
 
 // 栄養素名の日本語マッピング
@@ -104,7 +105,7 @@ const formatMineralValue = (name: string, value: number) => {
 };
 
 // メインコンポーネント
-export function MealAnalysis({ results, imageFile, onSaveComplete }: MealAnalysisProps) {
+export function MealAnalysis({ results, imageFile, onSaveComplete, hideButton }: MealAnalysisProps) {
   const { toast } = useToast();
   const [isSaving, setIsSaving] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
@@ -175,14 +176,17 @@ export function MealAnalysis({ results, imageFile, onSaveComplete }: MealAnalysi
   return (
     <div className="space-y-6">
       {/* 保存ボタン */}
-      <div className="flex justify-end">
-        <Button 
-          onClick={handleSave}
-          disabled={isSaving}
-        >
-          {isSaving ? "保存中..." : "分析結果を保存"}
-        </Button>
-      </div>
+      {!hideButton && (
+        <div className="flex justify-end">
+          <Button
+            onClick={handleSave}
+            disabled={isSaving || isSaved}
+            className="w-full max-w-sm"
+          >
+            {isSaving ? "保存中..." : "分析結果を保存"}
+          </Button>
+        </div>
+      )}
 
       {/* 検出された料理 */}
       <Card className="p-6">

@@ -2,10 +2,13 @@ import { AnalysisResults } from "@/types/analysis";
 import { supabaseClient } from '@/lib/supabase/client';
 import { v4 as uuidv4 } from 'uuid';
 
-export async function analyzeImage(file: File): Promise<AnalysisResults> {
+export async function analyzeImage(file: File, dishName?: string): Promise<AnalysisResults> {
   try {
     const formData = new FormData();
     formData.append('file', file);
+    if (dishName) {
+      formData.append('dishName', dishName);
+    }
 
     const response = await fetch('/api/analyze', {
       method: 'POST',

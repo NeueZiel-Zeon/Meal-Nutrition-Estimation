@@ -4,13 +4,16 @@ import { Upload } from "lucide-react";
 import { useCallback } from "react";
 import { useDropzone } from "react-dropzone";
 import { Card } from "@/components/ui/card";
+import Image from "next/image";
 
 interface ImageUploadProps {
   onImageSelect: (file: File) => void;
   previewUrl: string | null;
+  dishName: string;
+  onDishNameChange: (name: string) => void;
 }
 
-export function ImageUpload({ onImageSelect, previewUrl }: ImageUploadProps) {
+export function ImageUpload({ onImageSelect, previewUrl, dishName, onDishNameChange }: ImageUploadProps) {
   const onDrop = useCallback((acceptedFiles: File[]) => {
     if (acceptedFiles.length > 0) {
       onImageSelect(acceptedFiles[0]);
@@ -48,13 +51,32 @@ export function ImageUpload({ onImageSelect, previewUrl }: ImageUploadProps) {
 
       {previewUrl && (
         <Card className="p-4">
-          <img
+          <Image
             src={previewUrl}
             alt="プレビュー"
+            width={300}
+            height={300}
             className="max-h-[300px] mx-auto rounded-lg object-contain"
           />
         </Card>
       )}
+
+      <div className="mt-4">
+        <label htmlFor="dishName" className="block text-sm font-medium text-gray-700 mb-1">
+          料理名（任意）
+        </label>
+        <input
+          type="text"
+          id="dishName"
+          value={dishName}
+          onChange={(e) => onDishNameChange(e.target.value)}
+          placeholder="例：サラダ、カレーライスなど"
+          className="w-full px-3 py-2 border rounded-md"
+        />
+        <p className="mt-1 text-sm text-gray-500">
+          ※画像認識が難しい場合の補助として使用されます
+        </p>
+      </div>
     </div>
   );
 }

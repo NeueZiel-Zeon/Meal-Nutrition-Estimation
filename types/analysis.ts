@@ -64,3 +64,29 @@ export interface ChatContext {
   analysisResults: AnalysisResults;
   messages: Message[];
 }
+
+export interface MealRecord {
+  id: string;
+  created_at: string;
+  detected_dishes: string[];
+  food_items: string[];
+  calories: number;
+  portions: {
+    [key: string]: number;
+  };
+  nutrients: {
+    protein: number;
+    fat: number;
+    carbs: number;
+    vitamins: {
+      [key: string]: number;
+    };
+    minerals: {
+      [key: string]: number;
+    };
+  };
+  deficient_nutrients: string[];
+  excessive_nutrients: string[];
+  improvements: string[];
+  image_url?: string;
+}

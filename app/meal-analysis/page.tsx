@@ -22,6 +22,7 @@ export default function Home() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const tab = searchParams.get('tab');
+  const id = searchParams.get('id');
   const { supabase } = useSupabase();
   const { toast } = useToast();
   const [imageBase64, setImageBase64] = useState<string | null>(null);
@@ -40,7 +41,7 @@ export default function Home() {
   }, [tab]);
 
   useEffect(() => {
-    if (tab === 'analysis') {
+    if (tab === 'analysis' && !id) {
       try {
         // LocalStorageからデータを取得
         const storedResults = localStorage.getItem('analysisResults');
@@ -67,7 +68,51 @@ export default function Home() {
         console.error('Failed to parse analysis results:', error);
       }
     }
-  }, [searchParams, tab]);
+  }, [searchParams, tab, id]);
+
+  // カレンダーからの遷移時の処理
+  useEffect(() => {
+    if (id) {
+      const fetchAnalysis = async () => {
+        try {
+          const { data, error } = await supabase
+            .from('meal_analyses')
+            .select('*')
+            .eq('id', id)
+            .single();
+
+          if (error) throw error;
+
+          if (data) {
+            // DBのデータ形式を画面表示用の形式に変換
+            const formattedData = {
+              detectedDishes: data.detected_dishes,
+              foodItems: data.food_items,
+              calories: data.calories,
+              nutrients: data.nutrients,
+              portions: data.portions,
+              deficientNutrients: data.deficient_nutrients,
+              excessiveNutrients: data.excessive_nutrients,
+              improvements: data.improvements,
+              image_url: data.image_url
+            };
+            setAnalysisResults(formattedData);
+            setSavedAnalysisId(id);
+            setIsAnalysisSaved(true);
+          }
+        } catch (error) {
+          console.error('Failed to fetch analysis:', error);
+          toast({
+            title: "エラー",
+            description: "分析データの取得に失敗しました",
+            variant: "destructive"
+          });
+        }
+      };
+
+      fetchAnalysis();
+    }
+  }, [id, supabase, toast]);
 
   const handleLogout = async () => {
     try {
@@ -146,6 +191,7 @@ export default function Home() {
                 results={analysisResults} 
                 imageFile={imageFile || undefined}
                 onSaveComplete={handleAnalysisSave}
+                hideButton={!!id}
               />
             )}
           </TabsContent>

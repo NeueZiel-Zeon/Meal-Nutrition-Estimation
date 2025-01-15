@@ -4,16 +4,11 @@ import { useEffect, useState } from "react";
 import { getUserAnalyses } from "@/lib/analyze-image";
 import { format } from "date-fns";
 import { ja } from "date-fns/locale";
-
-interface MealRecord {
-  id: string;
-  created_at: string;
-  detected_dishes: string[];
-  food_items: string[];
-  calories: number;
-}
+import { useRouter } from "next/navigation";
+import { MealRecord } from "@/types/analysis";
 
 export function RecentMeals() {
+  const router = useRouter();
   const [meals, setMeals] = useState<MealRecord[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -44,6 +39,24 @@ export function RecentMeals() {
     loadMeals();
   }, []);
 
+  const handleMealClick = (meal: MealRecord) => {
+    // LocalStorageに分析結果を保存
+    localStorage.setItem('analysisResults', JSON.stringify({
+      detectedDishes: meal.detected_dishes,
+      foodItems: meal.food_items,
+      calories: meal.calories,
+      nutrients: meal.nutrients,
+      portions: meal.portions || {},
+      deficientNutrients: meal.deficient_nutrients,
+      excessiveNutrients: meal.excessive_nutrients,
+      improvements: meal.improvements,
+      image_url: meal.image_url
+    }));
+    
+    // 分析ページに遷移
+    router.push(`/meal-analysis?tab=analysis&id=${meal.id}`);
+  };
+
   if (loading) {
     return <div>読み込み中...</div>;
   }
@@ -57,23 +70,20 @@ export function RecentMeals() {
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-4">
       {meals.map((meal) => (
-        <div key={meal.id} className="flex items-center">
-          <div className="ml-4 space-y-1 flex-grow">
-            <p className="text-base font-medium leading-none">
-              {format(new Date(meal.created_at), "HH:mm", { locale: ja })}
-            </p>
-            <p className="text-base text-muted-foreground">
-              <span className="font-bold text-foreground">
-                {meal.detected_dishes.join("、")}
-              </span>
-            </p>
-            <p className="text-xs text-muted-foreground">
-              使用食材: {meal.food_items.join("、")}
-            </p>
-          </div>
-          <div className="ml-auto font-medium">{meal.calories} kcal</div>
+        <div
+          key={meal.id}
+          onClick={() => handleMealClick(meal)}
+          className="border-l-4 border-primary pl-4 py-2 cursor-pointer hover:bg-gray-50"
+        >
+          <h3 className="font-semibold">
+            {format(new Date(meal.created_at), 'HH:mm', { locale: ja })}
+            {' '}({meal.calories}kcal)
+          </h3>
+          <p className="text-sm text-gray-600">
+            {meal.detected_dishes.join('、')}
+          </p>
         </div>
       ))}
     </div>
