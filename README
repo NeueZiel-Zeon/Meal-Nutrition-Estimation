@@ -1,5 +1,17 @@
 README
 
+## 技術スタック
+
+- フロントエンド
+  - Next.js 14 (App Router)
+  - TypeScript
+  - Tailwind CSS
+  - shadcn/ui
+
+- バックエンド
+  - Supabase (認証・データベース)
+  - Anthropic Claude API (画像分析・AIアシスタント)
+  
 npm install --save-dev @types/react @types/node
 npm install lucide-react
 npm install recharts
