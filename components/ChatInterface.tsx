@@ -1,13 +1,12 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { Send } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { AnalysisResults, Message } from "@/types/analysis";
-import { generateAIResponse } from "@/lib/chat-utils";
 
 interface ChatInterfaceProps {
   analysisResults: AnalysisResults;

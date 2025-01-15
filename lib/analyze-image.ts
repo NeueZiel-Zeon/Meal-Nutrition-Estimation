@@ -1,6 +1,5 @@
 import { AnalysisResults } from "@/types/analysis";
 import { supabaseClient } from '@/lib/supabase/client';
-import { v4 as uuidv4 } from 'uuid';
 
 export async function analyzeImage(file: File, dishName?: string): Promise<AnalysisResults> {
   try {
@@ -76,12 +75,6 @@ export async function getImageContext(file: File): Promise<string> {
     throw error;
   }
 }
-
-// 日時を表示する際にUTCから日本時間に調整
-const adjustToJST = (utcDate: string) => {
-  const date = new Date(utcDate);
-  return new Date(date.getTime() + (9 * 60 * 60 * 1000));
-};
 
 export async function saveAnalysisResult(
   results: AnalysisResults,

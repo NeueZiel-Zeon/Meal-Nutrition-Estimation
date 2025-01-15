@@ -1,17 +1,14 @@
 "use client";
 
 import { MainNav } from "@/components/dashboard/main-nav";
-import { Calendar } from "@/components/ui/calendar";
 import { Button } from "@/components/ui/button";
 import { LogOut, ChevronLeft, ChevronRight } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useSupabase } from "@/components/providers/SupabaseProvider";
 import { useToast } from "@/components/ui/use-toast";
 import { useState, useEffect, useCallback } from "react";
-import { getNutrientsByDateRange } from "@/lib/analyze-image";
-import { startOfMonth, endOfMonth, format } from "date-fns";
+import { format } from "date-fns";
 import { ja } from "date-fns/locale";
-import Image from "next/image";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 
 interface MealRecord {

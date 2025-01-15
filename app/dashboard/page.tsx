@@ -18,8 +18,7 @@ import { useState, useEffect } from "react";
 import { NutrientSummary, getNutrientsByDateRange } from "@/lib/analyze-image";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
 import { ImageUpload } from "@/components/ImageUpload";
-import { analyzeImage, saveAnalysisResult } from "@/lib/analyze-image";
-import { AnalysisResults } from "@/types/analysis";
+import { analyzeImage} from "@/lib/analyze-image";
 
 interface ExtendedNutrientSummary extends NutrientSummary {
   totalVitamins: {

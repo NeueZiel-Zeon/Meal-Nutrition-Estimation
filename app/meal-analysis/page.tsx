@@ -1,21 +1,15 @@
 "use client";
 
-import { Upload, LogOut } from "lucide-react";
+import { LogOut } from "lucide-react";
 import { useState, useEffect } from "react";
-import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { MealAnalysis } from "@/components/MealAnalysis";
-import { ImageUpload } from "@/components/ImageUpload";
 import { ChatInterface } from "@/components/ChatInterface";
 import { AnalysisResults } from "@/types/analysis";
-import { analyzeImage, getImageContext, saveAnalysisResult } from "@/lib/analyze-image";
-import { generateAIResponse } from "@/lib/chat-utils";
-import { getServerClient } from '@/lib/supabase/server';
 import { useRouter, useSearchParams } from "next/navigation";
 import { useSupabase } from "@/components/providers/SupabaseProvider";
 import { useToast } from "@/components/ui/use-toast";
-import { AnalysisHistory } from "@/components/AnalysisHistory";
 import { MainNav } from "@/components/dashboard/main-nav";
 
 export default function Home() {
@@ -26,9 +20,7 @@ export default function Home() {
   const { supabase } = useSupabase();
   const { toast } = useToast();
   const [imageBase64, setImageBase64] = useState<string | null>(null);
-  const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisResults, setAnalysisResults] = useState<AnalysisResults | null>(null);
-  const [imageContext, setImageContext] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState("upload");
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [isAnalysisSaved, setIsAnalysisSaved] = useState(false);

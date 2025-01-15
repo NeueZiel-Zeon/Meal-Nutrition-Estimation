@@ -1,34 +1,30 @@
 "use client";
 
-import { Card } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { SignUpForm } from "@/components/auth/SignUpForm";
 import Link from "next/link";
+import { Button } from "@/components/ui/button";
 
 export default function SignUpPage() {
   return (
-    <div className="container flex h-screen w-screen flex-col items-center justify-center">
-      <Card className="w-[350px]">
-        <div className="p-6">
+    <div className="flex min-h-screen flex-col items-center justify-center p-4">
+      <Card className="w-full max-w-md">
+        <CardContent className="pt-6 pb-4 space-y-6">
           <div className="space-y-2 text-center">
-            <h1 className="text-2xl font-semibold tracking-tight">
-              アカウント作成
-            </h1>
-            <p className="text-sm text-muted-foreground">
-              必要な情報を入力してください
-            </p>
+            <h1 className="text-3xl font-bold">アカウント作成</h1>
+            <p className="text-gray-500">新しいアカウントを作成してください</p>
           </div>
 
           <SignUpForm />
 
-          <div className="mt-4 text-center text-sm">
-            <p className="text-muted-foreground">
-              すでにアカウントをお持ちの場合は{" "}
-              <Link href="/auth/login" className="text-primary hover:underline">
-                ログイン
+          <div className="text-center">
+            <Button variant="link" className="text-sm" asChild>
+              <Link href="/auth/login">
+                既にアカウントをお持ちの方はこちら
               </Link>
-            </p>
+            </Button>
           </div>
-        </div>
+        </CardContent>
       </Card>
     </div>
   );
