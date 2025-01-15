@@ -17,6 +17,7 @@ export function SignUpForm() {
   const router = useRouter();
   const { toast } = useToast();
   const { supabase } = useSupabase();
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
 
   async function onSubmit(event: React.FormEvent) {
     event.preventDefault();
@@ -36,6 +37,9 @@ export function SignUpForm() {
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
+        options: {
+          emailRedirectTo: `${siteUrl}/auth/callback`
+        }
       });
 
       if (error) {
