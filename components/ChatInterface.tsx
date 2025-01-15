@@ -34,7 +34,13 @@ export function ChatInterface({
       setIsLoading(true);
       const formData = new FormData();
       formData.append("message", input);
-      formData.append("analysisData", JSON.stringify(analysisResults));
+      formData.append(
+        "analysisData",
+        JSON.stringify({
+          ...analysisResults,
+          image_url: analysisResults.imageUrl,
+        })
+      );
 
       const userMessage: Message = {
         id: Date.now().toString(),

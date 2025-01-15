@@ -15,12 +15,13 @@ import { MainNav } from "@/components/dashboard/main-nav";
 export default function Home() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const tab = searchParams.get('tab');
-  const id = searchParams.get('id');
+  const tab = searchParams.get("tab");
+  const id = searchParams.get("id");
   const { supabase } = useSupabase();
   const { toast } = useToast();
   const [imageBase64, setImageBase64] = useState<string | null>(null);
-  const [analysisResults, setAnalysisResults] = useState<AnalysisResults | null>(null);
+  const [analysisResults, setAnalysisResults] =
+    useState<AnalysisResults | null>(null);
   const [activeTab, setActiveTab] = useState("upload");
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [isAnalysisSaved, setIsAnalysisSaved] = useState(false);
@@ -33,31 +34,33 @@ export default function Home() {
   }, [tab]);
 
   useEffect(() => {
-    if (tab === 'analysis' && !id) {
+    if (tab === "analysis" && !id) {
       try {
         // LocalStorageからデータを取得
-        const storedResults = localStorage.getItem('analysisResults');
-        const storedImage = localStorage.getItem('analysisImage');
-        
+        const storedResults = localStorage.getItem("analysisResults");
+        const storedImage = localStorage.getItem("analysisImage");
+
         if (storedResults) {
           setAnalysisResults(JSON.parse(storedResults));
         }
-        
+
         if (storedImage) {
           const imageData = JSON.parse(storedImage);
           const blob = new Blob(
-            [Uint8Array.from(atob(imageData.data), c => c.charCodeAt(0))],
+            [Uint8Array.from(atob(imageData.data), (c) => c.charCodeAt(0))],
             { type: imageData.type }
           );
-          const file = new File([blob], imageData.name, { type: imageData.type });
+          const file = new File([blob], imageData.name, {
+            type: imageData.type,
+          });
           setImageFile(file);
         }
-        
+
         // データを使用後はLocalStorageから削除
-        localStorage.removeItem('analysisResults');
-        localStorage.removeItem('analysisImage');
+        localStorage.removeItem("analysisResults");
+        localStorage.removeItem("analysisImage");
       } catch (error) {
-        console.error('Failed to parse analysis results:', error);
+        console.error("Failed to parse analysis results:", error);
       }
     }
   }, [searchParams, tab, id]);
@@ -68,36 +71,43 @@ export default function Home() {
       const fetchAnalysis = async () => {
         try {
           const { data, error } = await supabase
-            .from('meal_analyses')
-            .select('*')
-            .eq('id', id)
+            .from("meal_analyses")
+            .select("*")
+            .eq("id", id)
             .single();
 
           if (error) throw error;
 
           if (data) {
-            // DBのデータ形式を画面表示用の形式に変換
-            const formattedData = {
-              detectedDishes: data.detected_dishes,
-              foodItems: data.food_items,
+            // DBのデータ形式をフロントエンド用に変換
+            const formattedData: AnalysisResults = {
+              detectedDishes: data.detected_dishes || [],
+              foodItems: data.food_items || [],
               calories: data.calories,
-              nutrients: data.nutrients,
-              portions: data.portions,
-              deficientNutrients: data.deficient_nutrients,
-              excessiveNutrients: data.excessive_nutrients,
-              improvements: data.improvements,
-              image_url: data.image_url
+              portions: data.portions || {},
+              nutrients: {
+                protein: data.nutrients.protein,
+                fat: data.nutrients.fat,
+                carbs: data.nutrients.carbs,
+                vitamins: data.nutrients.vitamins || {},
+                minerals: data.nutrients.minerals || {},
+              },
+              deficientNutrients: data.deficient_nutrients || [],
+              excessiveNutrients: data.excessive_nutrients || [],
+              improvements: data.improvements || [],
+              imageUrl: data.image_url,
             };
+
             setAnalysisResults(formattedData);
             setSavedAnalysisId(id);
             setIsAnalysisSaved(true);
           }
         } catch (error) {
-          console.error('Failed to fetch analysis:', error);
+          console.error("Failed to fetch analysis:", error);
           toast({
             title: "エラー",
             description: "分析データの取得に失敗しました",
-            variant: "destructive"
+            variant: "destructive",
           });
         }
       };
@@ -128,21 +138,38 @@ export default function Home() {
 
   const handleAnalysisSave = async () => {
     setIsAnalysisSaved(true);
-    // 最新の分析結果をDBから取得
     try {
       const { data: latestAnalysis } = await supabase
-        .from('meal_analyses')
-        .select('*')
-        .order('created_at', { ascending: false })
+        .from("meal_analyses")
+        .select("*")
+        .order("created_at", { ascending: false })
         .limit(1)
         .single();
-      
+
       if (latestAnalysis) {
-        setAnalysisResults(latestAnalysis);
+        // DBのデータ形式をフロントエンド用に変換
+        const formattedData: AnalysisResults = {
+          detectedDishes: latestAnalysis.detected_dishes || [],
+          foodItems: latestAnalysis.food_items || [],
+          calories: latestAnalysis.calories,
+          portions: latestAnalysis.portions || {},
+          nutrients: {
+            protein: latestAnalysis.nutrients.protein,
+            fat: latestAnalysis.nutrients.fat,
+            carbs: latestAnalysis.nutrients.carbs,
+            vitamins: latestAnalysis.nutrients.vitamins || {},
+            minerals: latestAnalysis.nutrients.minerals || {},
+          },
+          deficientNutrients: latestAnalysis.deficient_nutrients || [],
+          excessiveNutrients: latestAnalysis.excessive_nutrients || [],
+          improvements: latestAnalysis.improvements || [],
+          imageUrl: latestAnalysis.image_url,
+        };
+        setAnalysisResults(formattedData);
         setSavedAnalysisId(latestAnalysis.id);
       }
     } catch (error) {
-      console.error('Error fetching saved analysis:', error);
+      console.error("Error fetching saved analysis:", error);
     }
   };
 
@@ -167,20 +194,22 @@ export default function Home() {
 
       <div className="container mx-auto px-4 py-8">
         <h1 className="text-4xl font-bold text-center mb-8">食事分析結果</h1>
-        
+
         <Tabs defaultValue="analysis" className="max-w-4xl mx-auto">
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="analysis">分析結果</TabsTrigger>
             <TabsTrigger value="chat" disabled={!isAnalysisSaved}>
               AIアシスタント
-              {!isAnalysisSaved && <span className="ml-2 text-xs">(保存後に利用可能)</span>}
+              {!isAnalysisSaved && (
+                <span className="ml-2 text-xs">(保存後に利用可能)</span>
+              )}
             </TabsTrigger>
           </TabsList>
 
           <TabsContent value="analysis">
             {analysisResults && (
-              <MealAnalysis 
-                results={analysisResults} 
+              <MealAnalysis
+                results={analysisResults}
                 imageFile={imageFile || undefined}
                 onSaveComplete={handleAnalysisSave}
                 hideButton={!!id}
@@ -190,7 +219,7 @@ export default function Home() {
 
           <TabsContent value="chat">
             {isAnalysisSaved && analysisResults && (
-              <ChatInterface 
+              <ChatInterface
                 analysisResults={analysisResults}
                 imageData={imageBase64}
                 analysisId={savedAnalysisId}

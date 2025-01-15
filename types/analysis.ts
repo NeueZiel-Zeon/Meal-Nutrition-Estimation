@@ -50,12 +50,12 @@ export interface AnalysisResults {
   deficientNutrients: string[];
   excessiveNutrients: string[];
   improvements: string[];
-  imageBase64?: string;
+  imageUrl?: string;
 }
 
 export interface Message {
   id: string;
-  role: 'user' | 'assistant';
+  role: "user" | "assistant";
   content: string;
   timestamp: number;
 }

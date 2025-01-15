@@ -19,22 +19,50 @@ const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
 });
 
+const VITAMIN_UNITS = {
+  vitaminA: "μg",
+  vitaminD: "μg",
+  vitaminE: "mg",
+  vitaminK: "μg",
+  vitaminB1: "mg",
+  vitaminB2: "mg",
+  vitaminB3: "mg",
+  vitaminB5: "mg",
+  vitaminB6: "mg",
+  vitaminB7: "μg",
+  vitaminB9: "μg",
+  vitaminB12: "μg",
+  vitaminC: "mg",
+} as const;
+
+const MINERAL_UNITS = {
+  calcium: "mg",
+  phosphorus: "mg",
+  magnesium: "mg",
+  sodium: "mg",
+  potassium: "mg",
+  sulfur: "mg",
+  chlorine: "μg",
+  iron: "mg",
+  copper: "mg",
+  zinc: "mg",
+  selenium: "μg",
+  manganese: "mg",
+  iodine: "mg",
+  cobalt: "μg",
+  molybdenum: "μg",
+  chromium: "mg",
+} as const;
+
 export async function POST(request: Request) {
   try {
     const formData = await request.formData();
     const message = formData.get("message") as string | null;
     const analysisData = formData.get("analysisData") as string | null;
 
-    if (!message) {
+    if (!message || !analysisData) {
       return NextResponse.json(
-        { error: "メッセージが必要です" },
-        { status: 400 }
-      );
-    }
-
-    if (!analysisData) {
-      return NextResponse.json(
-        { error: "分析データが必要です" },
+        { error: "必要なデータが不足しています" },
         { status: 400 }
       );
     }
@@ -47,7 +75,7 @@ export async function POST(request: Request) {
         type: "text",
         text: `
         検出された料理：
-        ${parsedAnalysisData.detected_dishes?.join('、') || '不明'}
+        ${parsedAnalysisData.detectedDishes?.join("、") || "不明"}
 
         カロリー：${parsedAnalysisData.calories}kcal
 
@@ -55,15 +83,26 @@ export async function POST(request: Request) {
         - タンパク質：${parsedAnalysisData.nutrients.protein}g
         - 脂質：${parsedAnalysisData.nutrients.fat}g
         - 炭水化物：${parsedAnalysisData.nutrients.carbs}g
+        
+        ビタミン：
+        ${Object.entries(parsedAnalysisData.nutrients.vitamins)
+          .map(
+            ([name, value]) =>
+              `- ${name}: ${value}${
+                VITAMIN_UNITS[name as keyof typeof VITAMIN_UNITS]
+              }`
+          )
+          .join("\n    ")}
 
-        不足している栄養素：
-        ${parsedAnalysisData.deficient_nutrients?.join('、')}
-
-        過剰な栄養素：
-        ${parsedAnalysisData.excessive_nutrients?.join('、')}
-
-        改善点：
-        ${parsedAnalysisData.improvements?.join('\n')}
+        ミネラル：
+        ${Object.entries(parsedAnalysisData.nutrients.minerals)
+          .map(
+            ([name, value]) =>
+              `- ${name}: ${value}${
+                MINERAL_UNITS[name as keyof typeof MINERAL_UNITS]
+              }`
+          )
+          .join("\n    ")}
 
         ユーザーの質問：${message}`,
       },
@@ -75,10 +114,11 @@ export async function POST(request: Request) {
         // 画像をフェッチ
         const imageResponse = await fetch(parsedAnalysisData.image_url);
         // Content-Typeを取得
-        const contentType = imageResponse.headers.get('content-type') || 'image/jpeg';
+        const contentType =
+          imageResponse.headers.get("content-type") || "image/jpeg";
         const arrayBuffer = await imageResponse.arrayBuffer();
-        const base64Data = Buffer.from(arrayBuffer).toString('base64');
-        
+        const base64Data = Buffer.from(arrayBuffer).toString("base64");
+
         content.push({
           type: "image",
           source: {
@@ -87,9 +127,9 @@ export async function POST(request: Request) {
             data: base64Data,
           },
         });
-        console.log('Image content type:', contentType);
+        console.log("Image content type:", contentType);
       } catch (error) {
-        console.error('Error fetching and converting image:', error);
+        console.error("Error fetching and converting image:", error);
       }
     }
 
@@ -124,14 +164,13 @@ export async function POST(request: Request) {
     return NextResponse.json({
       response: textContent.text,
     });
-
   } catch (error) {
     console.error("Detailed error:", error);
     return NextResponse.json(
-      { 
-        error: "Internal server error", 
+      {
+        error: "Internal server error",
         details: error instanceof Error ? error.message : "Unknown error",
-        stack: error instanceof Error ? error.stack : undefined
+        stack: error instanceof Error ? error.stack : undefined,
       },
       { status: 500 }
     );
@@ -155,4 +194,3 @@ export async function OPTIONS() {
 
   return response;
 }
-
