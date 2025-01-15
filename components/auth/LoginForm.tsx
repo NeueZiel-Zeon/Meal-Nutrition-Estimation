@@ -14,6 +14,7 @@ export function LoginForm() {
   const [isLoading, setIsLoading] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [error, setError] = useState<string | null>(null);
   const router = useRouter();
   const { toast } = useToast();
   const { supabase } = useSupabase();
@@ -21,6 +22,7 @@ export function LoginForm() {
   async function onSubmit(event: React.FormEvent) {
     event.preventDefault();
     setIsLoading(true);
+    setError(null);
 
     try {
       const { data: { user, session }, error } = await supabase.auth.signInWithPassword({
@@ -29,7 +31,14 @@ export function LoginForm() {
       });
 
       if (error || !session) {
-        throw error || new Error('セッションの確立に失敗しました');
+        let errorMessage = "ログインに失敗しました";
+        if (error?.message.includes("Invalid login credentials")) {
+          errorMessage = "メールアドレスまたはパスワードが間違っています";
+        } else if (error?.message.includes("Email not confirmed")) {
+          errorMessage = "メールアドレスが未確認です。確認メールをご確認ください";
+        }
+        setError(errorMessage);
+        throw new Error(errorMessage);
       }
 
       toast({
@@ -44,9 +53,10 @@ export function LoginForm() {
 
       window.location.href = '/meal-analysis';
     } catch (error: any) {
+      setError(error.message || "ログインに失敗しました。入力内容をご確認ください");
       toast({
-        title: "エラー",
-        description: error.message,
+        title: "ログインエラー",
+        description: error.message || "ログインに失敗しました。入力内容をご確認ください",
         variant: "destructive",
       });
     } finally {
@@ -56,6 +66,11 @@ export function LoginForm() {
 
   return (
     <form onSubmit={onSubmit} className="space-y-4 mt-4">
+      {error && (
+        <div className="p-3 rounded-md bg-destructive/15 text-destructive text-sm">
+          {error}
+        </div>
+      )}
       <div className="space-y-2">
         <Label htmlFor="email">メールアドレス</Label>
         <Input
