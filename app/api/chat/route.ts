@@ -71,14 +71,26 @@ export async function POST(request: Request) {
 
     // 画像URLが存在する場合は画像を追加
     if (parsedAnalysisData.image_url) {
-      content.push({
-        type: "image",
-        source: {
-          type: "base64",
-          media_type: "image/jpeg",
-          data: parsedAnalysisData.image_url,
-        },
-      });
+      try {
+        // 画像をフェッチ
+        const imageResponse = await fetch(parsedAnalysisData.image_url);
+        // Content-Typeを取得
+        const contentType = imageResponse.headers.get('content-type') || 'image/jpeg';
+        const arrayBuffer = await imageResponse.arrayBuffer();
+        const base64Data = Buffer.from(arrayBuffer).toString('base64');
+        
+        content.push({
+          type: "image",
+          source: {
+            type: "base64",
+            media_type: contentType,
+            data: base64Data,
+          },
+        });
+        console.log('Image content type:', contentType);
+      } catch (error) {
+        console.error('Error fetching and converting image:', error);
+      }
     }
 
     console.log("Calling Anthropic API...");

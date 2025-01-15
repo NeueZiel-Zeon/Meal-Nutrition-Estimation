@@ -11,7 +11,7 @@ export async function analyzeImage(file: File): Promise<AnalysisResults> {
       method: 'POST',
       body: formData,
       cache: 'no-store',
-      signal: AbortSignal.timeout(30000)
+      signal: AbortSignal.timeout(60000)
     });
 
     if (!response.ok) {
@@ -24,6 +24,9 @@ export async function analyzeImage(file: File): Promise<AnalysisResults> {
     return data;
   } catch (error) {
     console.error('Error in analyzeImage:', error);
+    if (error instanceof DOMException && error.name === 'TimeoutError') {
+      throw new Error('分析に時間がかかりすぎています。しばらく待ってから再度お試しください。');
+    }
     if (error instanceof TypeError && error.message === 'Failed to fetch') {
       throw new Error('APIサーバーに接続できません。サーバーが起動していることを確認してください。');
     }

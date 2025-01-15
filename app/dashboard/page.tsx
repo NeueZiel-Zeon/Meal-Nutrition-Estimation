@@ -354,11 +354,12 @@ export default function DashboardPage() {
       console.error('分析エラー:', error);
       toast({
         title: "エラー",
-        description: error instanceof Error ? error.message : "分析に失敗しました",
+        description: error instanceof Error ? error.message : "分析に失敗しました。時間をおいて再度お試しください。",
         variant: "destructive"
       });
-    } finally {
+      // 分析中の状態をリセット
       setIsAnalyzing(false);
+      return;
     }
   };
 
