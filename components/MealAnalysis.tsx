@@ -5,14 +5,16 @@ import { AnalysisResults } from "@/types/analysis";
 import { Button } from "@/components/ui/button";
 import { saveAnalysisResult } from "@/lib/analyze-image";
 import { useToast } from "@/components/ui/use-toast";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
+import Image from "next/image";
 
 interface MealAnalysisProps {
   results: AnalysisResults;
   imageFile?: File;
   onSaveComplete?: () => void;
   hideButton?: boolean;
+  isSaved?: boolean;
 }
 
 // 栄養素名の日本語マッピング
@@ -104,10 +106,19 @@ export function MealAnalysis({
   imageFile,
   onSaveComplete,
   hideButton,
+  isSaved,
 }: MealAnalysisProps) {
   const { toast } = useToast();
   const [isSaving, setIsSaving] = useState(false);
-  const [isSaved, setIsSaved] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (imageFile) {
+      const url = URL.createObjectURL(imageFile);
+      setPreviewUrl(url);
+      return () => URL.revokeObjectURL(url);
+    }
+  }, [imageFile]);
 
   const handleSave = async () => {
     if (!imageFile) {
@@ -122,11 +133,6 @@ export function MealAnalysis({
     setIsSaving(true);
     try {
       await saveAnalysisResult(results, imageFile);
-      setIsSaved(true);
-      toast({
-        title: "保存完了",
-        description: "分析結果を保存しました",
-      });
       if (onSaveComplete) {
         onSaveComplete();
       }
@@ -472,6 +478,18 @@ export function MealAnalysis({
           </ul>
         </div>
       </Card>
+
+      {previewUrl && (
+        <Card className="p-4">
+          <Image
+            src={previewUrl}
+            alt="プレビュー"
+            width={500}
+            height={500}
+            className="w-auto h-auto max-w-[300px] max-h-[300px] mx-auto rounded-lg object-contain"
+          />
+        </Card>
+      )}
     </div>
   );
 }

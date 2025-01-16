@@ -1,9 +1,18 @@
 import { AnalysisResults, Message } from "@/types/analysis";
+import { supabaseClient } from "@/lib/supabase/client";
 
 interface ChatContext {
   context: string;
   imageData?: string;
   analysisResults: AnalysisResults;
+  previousMessages?: Message[];
+}
+
+export interface ChatHistory {
+  id: string;
+  analysisId: string;
+  messageCount: number;
+  messages: Message[];
 }
 
 async function compressImage(base64Data: string): Promise<string> {
@@ -140,12 +149,87 @@ async function generatePrompt(input: string, context: ChatContext): Promise<stri
   const { analysisResults } = context;
   
   return `
-    \n検出された料理：
+    前回までの会話：
+    ${context.previousMessages?.map(m => 
+      `${m.role}: ${m.content}`
+    ).join('\n')}
+    
+    検出された料理：
     ${analysisResults.detectedDishes.join('、')}
 
-    \n詳細な分析結果：
+    詳細な分析結果：
     ${JSON.stringify(analysisResults)}
 
-    \nユーザーの質問：${input}
+    ユーザーの質問：${input}
+    
+    注意：
+    - 前回までの会話を踏まえて回答してください
+    - 一貫性のある栄養アドバイスを提供してください
   `;
+}
+
+export async function createOrGetChatHistory(analysisId: string) {
+  const { data: { user } } = await supabaseClient.auth.getUser();
+  if (!user) return null;
+
+  try {
+    // upsertを使用して一意性を保証
+    const { data: history, error } = await supabaseClient
+      .from('chat_histories')
+      .upsert(
+        { 
+          analysis_id: analysisId,
+          user_id: user.id,
+          message_count: 0
+        },
+        {
+          onConflict: 'analysis_id,user_id',
+          ignoreDuplicates: false
+        })
+      .select()
+      .single();
+
+    if (error) throw error;
+    return history;
+
+  } catch (error) {
+    console.error('Error creating/getting chat history:', error);
+    return null;
+  }
+}
+
+export async function saveChatMessage(
+  chatHistoryId: string, 
+  message: Message
+) {
+  if (!chatHistoryId) return;
+
+  const { error: insertError } = await supabaseClient
+    .from('chat_messages')
+    .insert({
+      chat_history_id: chatHistoryId,
+      role: message.role,
+      content: message.content
+    });
+
+  if (insertError) {
+    console.error('Error inserting message:', insertError);
+    return;
+  }
+
+  if (message.role === 'user') {
+    // まずRPCを呼び出してカウントを増やす
+    await supabaseClient
+      .rpc('increment_count', { row_id: chatHistoryId });
+
+    // 更新日時を更新
+    const { error: updateError } = await supabaseClient
+      .from('chat_histories')
+      .update({ updated_at: new Date().toISOString() })
+      .eq('id', chatHistoryId);
+
+    if (updateError) {
+      console.error('Error updating message count:', updateError);
+    }
+  }
 }

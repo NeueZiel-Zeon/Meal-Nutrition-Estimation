@@ -1,5 +1,6 @@
 import { Anthropic } from "@anthropic-ai/sdk";
 import { NextResponse } from "next/server";
+import { Message } from "@/types/analysis";
 
 type ContentBlock = {
   type: "text" | "image";
@@ -59,6 +60,7 @@ export async function POST(request: Request) {
     const formData = await request.formData();
     const message = formData.get("message") as string | null;
     const analysisData = formData.get("analysisData") as string | null;
+    const chatHistory = formData.get("chatHistory") as string | null;
 
     if (!message || !analysisData) {
       return NextResponse.json(
@@ -68,12 +70,18 @@ export async function POST(request: Request) {
     }
 
     const parsedAnalysisData = JSON.parse(analysisData);
+    const previousMessages = chatHistory ? JSON.parse(chatHistory) : [];
 
     console.log("Preparing content for AI...");
     const content: ContentBlock[] = [
       {
         type: "text",
         text: `
+        前回までの会話：
+        ${previousMessages.map((m: Message) => 
+          `${m.role}: ${m.content}`
+        ).join('\n')}
+
         検出された料理：
         ${parsedAnalysisData.detectedDishes?.join("、") || "不明"}
 

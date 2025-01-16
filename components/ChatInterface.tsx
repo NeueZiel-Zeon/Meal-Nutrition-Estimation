@@ -1,12 +1,15 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Send } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { AnalysisResults, Message } from "@/types/analysis";
+import { createOrGetChatHistory, saveChatMessage, ChatHistory } from "@/lib/chat-utils";
+import { supabaseClient } from "@/lib/supabase/client";
+import { useToast } from "@/components/ui/use-toast";
 
 interface ChatInterfaceProps {
   analysisResults: AnalysisResults;
@@ -17,17 +20,73 @@ interface ChatInterfaceProps {
 export function ChatInterface({
   analysisResults,
   imageData,
+  analysisId,
 }: ChatInterfaceProps) {
   const [messages, setMessages] = useState<Message[]>([]);
+  const [chatHistory, setChatHistory] = useState<ChatHistory | null>(null);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const { toast } = useToast();
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    console.log("WebSocket接続を試みています...");
-    // WebSocket接続のデバッグログを追加
-  }, []);
+    const initChat = async () => {
+      if (!analysisId) return;
+
+      try {
+        const history = await createOrGetChatHistory(analysisId);
+        if (!history) {
+          console.error('Failed to create/get chat history');
+          return;
+        }
+
+        setChatHistory(history);
+        
+        // 過去のメッセージを読み込む
+        const { data: messages } = await supabaseClient
+          .from('chat_messages')
+          .select('*')
+          .eq('chat_history_id', history.id)
+          .order('created_at', { ascending: true });
+          
+        if (messages) {
+          const formattedMessages: Message[] = messages.map(msg => ({
+            id: msg.id,
+            role: msg.role as "user" | "assistant",
+            content: msg.content,
+            timestamp: new Date(msg.created_at).getTime()
+          }));
+          setMessages(formattedMessages);
+        }
+      } catch (error) {
+        console.error('Error initializing chat:', error);
+      }
+    };
+    
+    initChat();
+  }, [analysisId]);
+
+  const scrollToBottom = () => {
+    const scrollArea = messagesEndRef.current?.closest('[data-radix-scroll-area-viewport]');
+    if (scrollArea) {
+      scrollArea.scrollTop = scrollArea.scrollHeight;
+    }
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
 
   const handleSend = async () => {
+    if (!chatHistory || chatHistory.messageCount >= 5) {
+      toast({
+        title: "チャット制限",
+        description: "この分析のチャット回数制限に達しました",
+        variant: "destructive"
+      });
+      return;
+    }
+
     if (!input.trim() || isLoading) return;
 
     try {
@@ -40,6 +99,10 @@ export function ChatInterface({
           ...analysisResults,
           image_url: analysisResults.imageUrl,
         })
+      );
+      formData.append(
+        "chatHistory",
+        JSON.stringify(messages)
       );
 
       const userMessage: Message = {
@@ -70,6 +133,10 @@ export function ChatInterface({
         timestamp: Date.now(),
       };
       setMessages((prev) => [...prev, aiMessage]);
+
+      // メッセージを保存
+      await saveChatMessage(chatHistory.id, userMessage);
+      await saveChatMessage(chatHistory.id, aiMessage);
     } catch (error) {
       console.error("詳細なエラー情報:", error);
       handleError(error);
@@ -84,8 +151,8 @@ export function ChatInterface({
   };
 
   return (
-    <Card className="flex flex-col h-[500px]">
-      <ScrollArea className="flex-1 p-4">
+    <Card className="h-[600px] flex flex-col">
+      <ScrollArea className="flex-1 p-4 h-[500px]">
         <div className="space-y-4">
           {messages.map((message) => (
             <div
@@ -107,6 +174,7 @@ export function ChatInterface({
               </div>
             </div>
           ))}
+          <div ref={messagesEndRef} />
           {isLoading && (
             <div className="flex justify-start">
               <div className="bg-muted rounded-lg p-3">入力中...</div>
@@ -120,7 +188,7 @@ export function ChatInterface({
           <Input
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            onKeyPress={(e) => e.key === "Enter" && handleSend()}
+            onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && handleSend()}
             placeholder="メッセージを入力..."
             disabled={isLoading}
           />

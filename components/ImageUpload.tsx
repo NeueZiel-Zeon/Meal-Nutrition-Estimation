@@ -54,9 +54,9 @@ export function ImageUpload({ onImageSelect, previewUrl, dishName, onDishNameCha
           <Image
             src={previewUrl}
             alt="プレビュー"
-            width={300}
-            height={300}
-            className="max-h-[300px] mx-auto rounded-lg object-contain"
+            width={500}
+            height={500}
+            className="w-auto h-auto max-w-[300px] max-h-[300px] mx-auto rounded-lg object-contain"
           />
         </Card>
       )}

@@ -17,6 +17,7 @@ export default function Home() {
   const searchParams = useSearchParams();
   const tab = searchParams.get("tab");
   const id = searchParams.get("id");
+  const isSaved = searchParams.get("saved") === "true";
   const { supabase } = useSupabase();
   const { toast } = useToast();
   const [imageBase64, setImageBase64] = useState<string | null>(null);
@@ -67,54 +68,51 @@ export default function Home() {
 
   // カレンダーからの遷移時の処理
   useEffect(() => {
-    if (id) {
-      const fetchAnalysis = async () => {
-        try {
-          const { data, error } = await supabase
-            .from("meal_analyses")
-            .select("*")
-            .eq("id", id)
-            .single();
+    const fetchAnalysis = async () => {
+      if (!id || id === 'null') return;
+      
+      try {
+        const { data: analysis, error } = await supabase
+          .from('meal_analyses')
+          .select('*')
+          .eq('id', id)
+          .single();
 
-          if (error) throw error;
+        if (error) throw error;
 
-          if (data) {
-            // DBのデータ形式をフロントエンド用に変換
-            const formattedData: AnalysisResults = {
-              detectedDishes: data.detected_dishes || [],
-              foodItems: data.food_items || [],
-              calories: data.calories,
-              portions: data.portions || {},
-              nutrients: {
-                protein: data.nutrients.protein,
-                fat: data.nutrients.fat,
-                carbs: data.nutrients.carbs,
-                vitamins: data.nutrients.vitamins || {},
-                minerals: data.nutrients.minerals || {},
-              },
-              deficientNutrients: data.deficient_nutrients || [],
-              excessiveNutrients: data.excessive_nutrients || [],
-              improvements: data.improvements || [],
-              imageUrl: data.image_url,
-            };
+        if (analysis) {
+          // DBのデータ形式をフロントエンド用に変換
+          const formattedData: AnalysisResults = {
+            detectedDishes: analysis.detected_dishes || [],
+            foodItems: analysis.food_items || [],
+            calories: analysis.calories,
+            portions: analysis.portions || {},
+            nutrients: {
+              protein: analysis.nutrients.protein,
+              fat: analysis.nutrients.fat,
+              carbs: analysis.nutrients.carbs,
+              vitamins: analysis.nutrients.vitamins || {},
+              minerals: analysis.nutrients.minerals || {},
+            },
+            deficientNutrients: analysis.deficient_nutrients || [],
+            excessiveNutrients: analysis.excessive_nutrients || [],
+            improvements: analysis.improvements || [],
+            imageUrl: analysis.image_url,
+          };
 
-            setAnalysisResults(formattedData);
-            setSavedAnalysisId(id);
-            setIsAnalysisSaved(true);
-          }
-        } catch (error) {
-          console.error("Failed to fetch analysis:", error);
-          toast({
-            title: "エラー",
-            description: "分析データの取得に失敗しました",
-            variant: "destructive",
-          });
+          setAnalysisResults(formattedData);
+          setSavedAnalysisId(analysis.id);
+          setIsAnalysisSaved(true);
         }
-      };
+      } catch (error) {
+        console.error('Failed to fetch analysis:', error);
+      }
+    };
 
+    if (id) {
       fetchAnalysis();
     }
-  }, [id, supabase, toast]);
+  }, [id, supabase]);
 
   const handleLogout = async () => {
     try {
@@ -147,26 +145,8 @@ export default function Home() {
         .single();
 
       if (latestAnalysis) {
-        // DBのデータ形式をフロントエンド用に変換
-        const formattedData: AnalysisResults = {
-          detectedDishes: latestAnalysis.detected_dishes || [],
-          foodItems: latestAnalysis.food_items || [],
-          calories: latestAnalysis.calories,
-          portions: latestAnalysis.portions || {},
-          nutrients: {
-            protein: latestAnalysis.nutrients.protein,
-            fat: latestAnalysis.nutrients.fat,
-            carbs: latestAnalysis.nutrients.carbs,
-            vitamins: latestAnalysis.nutrients.vitamins || {},
-            minerals: latestAnalysis.nutrients.minerals || {},
-          },
-          deficientNutrients: latestAnalysis.deficient_nutrients || [],
-          excessiveNutrients: latestAnalysis.excessive_nutrients || [],
-          improvements: latestAnalysis.improvements || [],
-          imageUrl: latestAnalysis.image_url,
-        };
-        setAnalysisResults(formattedData);
         setSavedAnalysisId(latestAnalysis.id);
+        router.push(`/meal-analysis?tab=analysis&id=${latestAnalysis.id}&saved=true`);
       }
     } catch (error) {
       console.error("Error fetching saved analysis:", error);
@@ -212,6 +192,7 @@ export default function Home() {
                 results={analysisResults}
                 imageFile={imageFile || undefined}
                 onSaveComplete={handleAnalysisSave}
+                isSaved={isSaved}
                 hideButton={!!id}
               />
             )}
