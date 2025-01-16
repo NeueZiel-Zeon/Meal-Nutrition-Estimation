@@ -26,6 +26,7 @@ export function ChatInterface({
   const [chatHistory, setChatHistory] = useState<ChatHistory | null>(null);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [currentStreamingMessage, setCurrentStreamingMessage] = useState<string>("");
   const { toast } = useToast();
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -124,15 +125,37 @@ export function ChatInterface({
         throw new Error(`API Error: ${response.status}`);
       }
 
-      const data = await response.json();
+      if (!response.body) {
+        throw new Error("No response body");
+      }
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let accumulatedResponse = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        const chunk = decoder.decode(value);
+        try {
+          const jsonChunk = JSON.parse(chunk);
+          accumulatedResponse = jsonChunk.response;
+          setCurrentStreamingMessage(accumulatedResponse);
+        } catch (e) {
+          console.error("Error parsing chunk:", e);
+        }
+      }
 
       const aiMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: "assistant",
-        content: data.response,
+        content: accumulatedResponse,
         timestamp: Date.now(),
       };
+
       setMessages((prev) => [...prev, aiMessage]);
+      setCurrentStreamingMessage("");
 
       // メッセージを保存
       await saveChatMessage(chatHistory.id, userMessage);
@@ -174,8 +197,17 @@ export function ChatInterface({
               </div>
             </div>
           ))}
+          {currentStreamingMessage && (
+            <div className="flex justify-start">
+              <div className="max-w-[80%] rounded-lg p-3 bg-muted">
+                <pre className="whitespace-pre-wrap break-words font-sans">
+                  {currentStreamingMessage}
+                </pre>
+              </div>
+            </div>
+          )}
           <div ref={messagesEndRef} />
-          {isLoading && (
+          {isLoading && !currentStreamingMessage && (
             <div className="flex justify-start">
               <div className="bg-muted rounded-lg p-3">入力中...</div>
             </div>

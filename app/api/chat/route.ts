@@ -119,9 +119,7 @@ export async function POST(request: Request) {
     // 画像URLが存在する場合は画像を追加
     if (parsedAnalysisData.image_url) {
       try {
-        // 画像をフェッチ
         const imageResponse = await fetch(parsedAnalysisData.image_url);
-        // Content-Typeを取得
         const contentType =
           imageResponse.headers.get("content-type") || "image/jpeg";
         const arrayBuffer = await imageResponse.arrayBuffer();
@@ -142,7 +140,7 @@ export async function POST(request: Request) {
     }
 
     console.log("Calling Anthropic API...");
-    const response = await anthropic.messages.create({
+    const stream = await anthropic.messages.create({
       model: "claude-3-5-sonnet-20241022",
       max_tokens: 1024,
       messages: [
@@ -151,6 +149,7 @@ export async function POST(request: Request) {
           content: content as any,
         },
       ],
+      stream: true,
       system: `あなたは栄養士として、ユーザーの食事写真を基に、健康的な食生活のアドバイスを提供します。
               以下の形式で回答してください：
 
@@ -163,15 +162,41 @@ export async function POST(request: Request) {
               また、常に人間が読みやすいように見出しや箇条書きを使用することを意識してください。`,
     });
 
-    console.log("Processing AI response...");
-    const textContent = response.content[0];
-    if (!textContent || !("text" in textContent)) {
-      throw new Error("Invalid response format");
-    }
-
-    return NextResponse.json({
-      response: textContent.text,
+    // ストリーミングレスポンスを作成
+    const encoder = new TextEncoder();
+    const customStream = new ReadableStream({
+      async start(controller) {
+        let accumulatedText = "";
+        
+        try {
+          for await (const chunk of stream) {
+            if (chunk.type === 'content_block_delta' && 
+                'delta' in chunk && 
+                'text' in chunk.delta && 
+                typeof chunk.delta.text === 'string') {
+              accumulatedText += chunk.delta.text;
+              controller.enqueue(
+                encoder.encode(
+                  JSON.stringify({ response: accumulatedText }) + "\n"
+                )
+              );
+            }
+          }
+          controller.close();
+        } catch (error) {
+          controller.error(error);
+        }
+      },
     });
+
+    return new Response(customStream, {
+      headers: {
+        "Content-Type": "text/event-stream",
+        "Cache-Control": "no-cache",
+        "Connection": "keep-alive",
+      },
+    });
+
   } catch (error) {
     console.error("Detailed error:", error);
     return NextResponse.json(

@@ -117,8 +117,10 @@ export function MealAnalysis({
       const url = URL.createObjectURL(imageFile);
       setPreviewUrl(url);
       return () => URL.revokeObjectURL(url);
+    } else if (results.imageUrl) {
+      setPreviewUrl(results.imageUrl);
     }
-  }, [imageFile]);
+  }, [imageFile, results.imageUrl]);
 
   const handleSave = async () => {
     if (!imageFile) {
@@ -481,13 +483,14 @@ export function MealAnalysis({
 
       {previewUrl && (
         <Card className="p-4">
-          <Image
-            src={previewUrl}
-            alt="プレビュー"
-            width={500}
-            height={500}
-            className="w-auto h-auto max-w-[300px] max-h-[300px] mx-auto rounded-lg object-contain"
-          />
+          <div className="relative w-full h-[300px]">
+            <Image
+              src={previewUrl}
+              alt="食事の写真"
+              fill
+              className="rounded-lg object-contain"
+            />
+          </div>
         </Card>
       )}
     </div>
