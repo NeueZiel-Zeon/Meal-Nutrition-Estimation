@@ -11,8 +11,8 @@ import { Toaster } from "@/components/ui/toaster";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "食事分析アプリ",
-  description: "食事の写真から栄養分析を行うアプリケーション",
+  title: "食事栄養分析アプリ",
+  description: "AIを使用して食事の栄養価を分析し、健康的な食生活をサポートします。",
 };
 
 export default async function RootLayout({
