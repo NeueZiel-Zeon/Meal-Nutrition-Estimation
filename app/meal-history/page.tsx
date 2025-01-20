@@ -268,6 +268,8 @@ export default function MealHistoryPage() {
                     const calories = caloriesByDate[dateKey];
                     const isCurrentMonth = currentDate.getMonth() === currentMonth.getMonth();
                     const isSelected = currentDate.toDateString() === date.toDateString();
+                    const isSunday = currentDate.getDay() === 0;
+                    const isSaturday = currentDate.getDay() === 6;
                     
                     return (
                       <div
@@ -276,11 +278,19 @@ export default function MealHistoryPage() {
                           relative p-2 text-center cursor-pointer hover:bg-gray-50 rounded-lg
                           ${isSelected ? 'ring-2 ring-blue-500 bg-blue-50' : ''}
                           ${!isCurrentMonth ? 'text-gray-400' : ''}
+                          ${isSunday ? 'bg-red-50' : ''}
+                          ${isSaturday ? 'bg-blue-50' : ''}
                         `}
                         onClick={() => setDate(currentDate)}
                       >
                         <div className="flex flex-col items-center">
-                          <span className="text-sm mb-1">{currentDate.getDate()}</span>
+                          <span className={`text-sm mb-1 
+                            ${isSunday ? 'text-red-600' : ''}
+                            ${isSaturday ? 'text-blue-600' : ''}
+                            ${!isCurrentMonth ? 'text-gray-400' : ''}
+                          `}>
+                            {currentDate.getDate()}
+                          </span>
                           <span className={`text-[10px] ${!isCurrentMonth ? 'text-gray-400' : 'text-gray-500'}`}>
                             {calories ? `${calories}kcal` : '0kcal'}
                           </span>

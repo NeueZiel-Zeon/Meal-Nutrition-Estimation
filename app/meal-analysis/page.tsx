@@ -173,41 +173,53 @@ export default function Home() {
       </div>
 
       <div className="container mx-auto px-4 py-8">
-        <h1 className="text-4xl font-bold text-center mb-8">食事分析結果</h1>
+        <div className="max-w-4xl mx-auto">
+          <div className="relative mb-8">
+            <h1 className="text-4xl font-bold text-center">食事分析結果</h1>
+            {analysisResults && !isSaved && !id && (
+              <Button
+                className="absolute right-0 top-1/2 -translate-y-1/2 w-40"
+                onClick={handleAnalysisSave}
+                disabled={isAnalysisSaved}
+                size="sm"
+              >
+                分析結果を保存
+              </Button>
+            )}
+          </div>
 
-        <Tabs defaultValue="analysis" className="max-w-4xl mx-auto">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="analysis">分析結果</TabsTrigger>
-            <TabsTrigger value="chat" disabled={!isAnalysisSaved}>
-              AIアシスタント
-              {!isAnalysisSaved && (
-                <span className="ml-2 text-xs">(保存後に利用可能)</span>
+          <Tabs defaultValue="analysis" className="w-full">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="analysis">分析結果</TabsTrigger>
+              <TabsTrigger value="chat" disabled={!isAnalysisSaved}>
+                AIアシスタント
+                {!isAnalysisSaved && (
+                  <span className="ml-2 text-xs">(保存後に利用可能)</span>
+                )}
+              </TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="analysis">
+              {analysisResults && (
+                <MealAnalysis
+                  results={analysisResults}
+                  imageFile={imageFile || undefined}
+                  hideButton={true}
+                />
               )}
-            </TabsTrigger>
-          </TabsList>
+            </TabsContent>
 
-          <TabsContent value="analysis">
-            {analysisResults && (
-              <MealAnalysis
-                results={analysisResults}
-                imageFile={imageFile || undefined}
-                onSaveComplete={handleAnalysisSave}
-                isSaved={isSaved}
-                hideButton={!!id}
-              />
-            )}
-          </TabsContent>
-
-          <TabsContent value="chat">
-            {isAnalysisSaved && analysisResults && (
-              <ChatInterface
-                analysisResults={analysisResults}
-                imageData={imageBase64}
-                analysisId={savedAnalysisId}
-              />
-            )}
-          </TabsContent>
-        </Tabs>
+            <TabsContent value="chat">
+              {isAnalysisSaved && analysisResults && (
+                <ChatInterface
+                  analysisResults={analysisResults}
+                  imageData={imageBase64}
+                  analysisId={savedAnalysisId}
+                />
+              )}
+            </TabsContent>
+          </Tabs>
+        </div>
       </div>
     </>
   );

@@ -167,6 +167,7 @@ export async function POST(request: Request) {
     const customStream = new ReadableStream({
       async start(controller) {
         let accumulatedText = "";
+        let buffer = "";
         
         try {
           for await (const chunk of stream) {
@@ -175,15 +176,32 @@ export async function POST(request: Request) {
                 'text' in chunk.delta && 
                 typeof chunk.delta.text === 'string') {
               accumulatedText += chunk.delta.text;
-              controller.enqueue(
-                encoder.encode(
-                  JSON.stringify({ response: accumulatedText }) + "\n"
-                )
-              );
+              buffer += chunk.delta.text;
+              
+              // バッファが一定サイズになるか、改行文字を含む場合に送信
+              if (buffer.length >= 100 || buffer.includes('\n')) {
+                controller.enqueue(
+                  encoder.encode(
+                    JSON.stringify({ response: accumulatedText }) + "\n"
+                  )
+                );
+                buffer = "";
+              }
             }
           }
+          
+          // 残りのバッファがある場合は送信
+          if (buffer.length > 0) {
+            controller.enqueue(
+              encoder.encode(
+                JSON.stringify({ response: accumulatedText }) + "\n"
+              )
+            );
+          }
+          
           controller.close();
         } catch (error) {
+          console.error("Streaming error:", error);
           controller.error(error);
         }
       },
