@@ -18,6 +18,10 @@ export default function VerifyEmailPage() {
           </div>
 
           <div className="text-center">
+          <p className="text-gray-500">
+              ※確認メールが届かない場合は、
+              <br />迷惑メールフォルダ等もご確認ください
+          </p>
             <Button variant="link" className="text-sm" asChild>
               <Link href="/auth/login">
                 ログイン画面に戻る
