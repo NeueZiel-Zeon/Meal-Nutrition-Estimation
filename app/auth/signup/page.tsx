@@ -17,6 +17,11 @@ export default function SignUpPage() {
 
           <SignUpForm />
 
+          <div className="text-center text-sm text-gray-500 border-t pt-4">
+            <p>登録情報は、ユーザー認証および</p>
+            <p>サービス提供の目的にのみ使用されます</p>
+          </div>
+
           <div className="text-center">
             <Button variant="link" className="text-sm" asChild>
               <Link href="/auth/login">
