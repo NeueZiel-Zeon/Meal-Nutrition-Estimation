@@ -276,17 +276,17 @@ export default function MealHistoryPage() {
                         key={i}
                         className={`
                           relative p-2 text-center cursor-pointer hover:bg-gray-50 rounded-lg
-                          ${isSelected ? 'ring-2 ring-blue-500 bg-blue-50' : ''}
+                          ${isSelected ? 'ring-2 ring-black bg-gray-100' : ''}
                           ${!isCurrentMonth ? 'text-gray-400' : ''}
-                          ${isSunday ? 'bg-red-50' : ''}
-                          ${isSaturday ? 'bg-blue-50' : ''}
+                          ${isCurrentMonth && isSunday ? 'bg-red-50' : ''}
+                          ${isCurrentMonth && isSaturday ? 'bg-blue-50' : ''}
                         `}
                         onClick={() => setDate(currentDate)}
                       >
                         <div className="flex flex-col items-center">
                           <span className={`text-sm mb-1 
-                            ${isSunday ? 'text-red-600' : ''}
-                            ${isSaturday ? 'text-blue-600' : ''}
+                            ${isCurrentMonth && isSunday ? 'text-red-600' : ''}
+                            ${isCurrentMonth && isSaturday ? 'text-blue-600' : ''}
                             ${!isCurrentMonth ? 'text-gray-400' : ''}
                           `}>
                             {currentDate.getDate()}
