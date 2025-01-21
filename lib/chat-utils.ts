@@ -180,7 +180,6 @@ export async function createOrGetChatHistory(analysisId: string) {
         { 
           analysis_id: analysisId,
           user_id: user.id,
-          message_count: 0
         },
         {
           onConflict: 'analysis_id,user_id',
@@ -204,32 +203,18 @@ export async function saveChatMessage(
 ) {
   if (!chatHistoryId) return;
 
-  const { error: insertError } = await supabaseClient
-    .from('chat_messages')
-    .insert({
-      chat_history_id: chatHistoryId,
-      role: message.role,
-      content: message.content
+  try {
+    // トランザクション的な処理のために、単一の呼び出しにまとめる
+    const { error } = await supabaseClient.rpc('save_chat_message', {
+      p_chat_history_id: chatHistoryId,
+      p_role: message.role,
+      p_content: message.content
     });
 
-  if (insertError) {
-    console.error('Error inserting message:', insertError);
-    return;
-  }
+    if (error) throw error;
 
-  if (message.role === 'user') {
-    // まずRPCを呼び出してカウントを増やす
-    await supabaseClient
-      .rpc('increment_count', { row_id: chatHistoryId });
-
-    // 更新日時を更新
-    const { error: updateError } = await supabaseClient
-      .from('chat_histories')
-      .update({ updated_at: new Date().toISOString() })
-      .eq('id', chatHistoryId);
-
-    if (updateError) {
-      console.error('Error updating message count:', updateError);
-    }
+  } catch (error) {
+    console.error('Error saving chat message:', error);
+    throw error;
   }
 }

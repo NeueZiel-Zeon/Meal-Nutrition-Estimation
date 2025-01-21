@@ -124,3 +124,22 @@ $$ LANGUAGE plpgsql;
 ALTER TABLE chat_histories
   ADD CONSTRAINT chat_histories_analysis_id_user_id_key 
   UNIQUE (analysis_id, user_id);
+
+CREATE OR REPLACE FUNCTION save_chat_message(
+  p_chat_history_id uuid,
+  p_role text,
+  p_content text
+) RETURNS void AS $$
+BEGIN
+  -- メッセージを挿入
+  INSERT INTO chat_messages (chat_history_id, role, content)
+  VALUES (p_chat_history_id, p_role, p_content);
+
+  -- ユーザーメッセージの場合のみカウントを更新
+  IF p_role = 'user' THEN
+    UPDATE chat_histories
+    SET message_count = message_count + 1
+    WHERE id = p_chat_history_id;
+  END IF;
+END;
+$$ LANGUAGE plpgsql;
