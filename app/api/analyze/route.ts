@@ -11,6 +11,8 @@ const anthropic = new Anthropic({
 });
 
 export async function POST(request: Request) {
+  // 食事分析のエンドポイント
+  // POSTメソッドで画像データを受け取り、分析結果を返す
   try {
     const formData = await request.formData();
     const file = formData.get('file') as File;

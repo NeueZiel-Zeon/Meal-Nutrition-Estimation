@@ -79,7 +79,7 @@ export async function getImageContext(file: File): Promise<string> {
 export async function saveAnalysisResult(
   results: AnalysisResults,
   imageFile: File
-) {
+): Promise<{ id: string } | null> {
   try {
     const now = new Date();
 
@@ -118,7 +118,9 @@ export async function saveAnalysisResult(
         image_url: publicUrl,
         image_base64: results.imageBase64,
         created_at: now.toISOString()
-      });
+      })
+      .select()
+      .single();
 
     if (error) throw error;
     return data;

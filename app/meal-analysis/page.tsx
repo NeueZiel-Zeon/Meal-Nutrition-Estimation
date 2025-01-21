@@ -1,5 +1,6 @@
 "use client";
 
+import { saveAnalysisResult } from "@/lib/analyze-image";
 import { LogOut } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
@@ -135,21 +136,45 @@ export default function Home() {
   };
 
   const handleAnalysisSave = async () => {
-    setIsAnalysisSaved(true);
     try {
-      const { data: latestAnalysis } = await supabase
-        .from("meal_analyses")
-        .select("*")
-        .order("created_at", { ascending: false })
-        .limit(1)
-        .single();
-
-      if (latestAnalysis) {
-        setSavedAnalysisId(latestAnalysis.id);
-        router.push(`/meal-analysis?tab=analysis&id=${latestAnalysis.id}&saved=true`);
+      if (!analysisResults) {
+        throw new Error("分析結果がありません");
       }
+
+      // 現在表示中の分析結果を使用
+      const currentResults = {
+        ...analysisResults,
+        imageUrl: analysisResults.imageUrl || undefined
+      };
+
+      // 1. 実際のデータ保存処理を実行
+      const savedData = await saveAnalysisResult(
+        currentResults,
+        imageFile || new File([analysisResults.imageUrl || ''], 'image.jpg')
+      );
+
+      // 2. 保存成功後に状態を更新
+      setIsAnalysisSaved(true);
+
+      // 3. 保存したデータのIDを取得
+      if (savedData) {
+        setSavedAnalysisId(savedData.id);
+        // 同じページに留まり、状態を保持
+        router.replace(`/meal-analysis?tab=analysis&id=${savedData.id}&saved=true`);
+      }
+
+      toast({
+        title: "保存成功",
+        description: "分析結果を保存しました",
+      });
+
     } catch (error) {
-      console.error("Error fetching saved analysis:", error);
+      console.error("保存エラー:", error);
+      toast({
+        title: "保存エラー",
+        description: error instanceof Error ? error.message : "保存に失敗しました",
+        variant: "destructive",
+      });
     }
   };
 
