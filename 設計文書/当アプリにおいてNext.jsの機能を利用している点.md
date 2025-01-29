@@ -17,7 +17,11 @@
 ## 2. Server Components
 ### 使用箇所
 - `app/layout.tsx` - ルートレイアウト
+  - 理由：共通レイアウトの提供、メタデータの設定
+  - インタラクションが不要で、静的なヘッダー・フッター
 - `app/page.tsx` - メインページ
+  - 理由：初期データのフェッチとレンダリング
+  - パフォーマンスとSEOの最適化が重要
 ```typescript
 export const dynamic = "force-dynamic";
 ```
@@ -27,11 +31,41 @@ export const dynamic = "force-dynamic";
 - SEO対策の容易さ
 - クライアントサイドのJavaScriptバンドルサイズの削減
 
+### 使用例
+- `app/api/auth/[...nextauth]/route.ts`
+  - 理由：認証処理の実装
+  - 機密情報の安全な取り扱い
+- `app/dashboard/page.tsx`
+  - 理由：データベースからの集計データ取得
+  - 大量データの処理とキャッシュ
+
+### 使い分けの基準
+1. データアクセスパターン
+   - データベースへの直接アクセスが必要
+   - 外部APIの呼び出しが必要
+   - 機密情報（APIキーなど）の利用が必要
+
+2. パフォーマンス要件
+   - 大量のデータ処理が必要
+   - キャッシュの活用が重要
+   - バンドルサイズの最適化が必要
+
+3. セキュリティ要件
+   - 認証・認可の処理
+   - 機密データの取り扱い
+   - サーバーサイドでの検証が必要
+
 ## 3. Client Components
 ### 使用箇所
 - `components/MealAnalysis.tsx`
-- `components/ChatInterface.tsx`
+  - 理由：複雑なフォーム状態の管理
+  - リアルタイムバリデーション
 - `components/ImageUpload.tsx`
+  - 理由：File APIの使用
+  - ドラッグ&ドロップのUI
+- `components/ChatInterface.tsx`
+  - 理由：Server-Sent Eventsによるストリーミング処理
+  - リアルタイムメッセージの段階的表示
 ```typescript
 "use client";
 ```
@@ -40,6 +74,38 @@ export const dynamic = "force-dynamic";
 - インタラクティブな機能の実装
 - クライアントサイドでのステート管理
 - リアルタイムな更新処理
+
+### 使用例
+- `components/ImageUpload.tsx`
+  - 理由：画像のドラッグ&ドロップ処理
+  - プレビュー表示の即時更新
+- `components/ChatInterface.tsx`
+  - 理由：リアルタイムメッセージ送受信
+  - チャット履歴のステート管理
+- `components/dashboard/recent-meals.tsx`
+  - 理由：食事データの動的フィルタリング
+  - ユーザーインタラクションの処理 
+
+### 使い分けの基準
+1. ブラウザAPI利用
+   - localStorage/sessionStorageの使用
+   - ブラウザイベントの処理
+   - Geolocation APIの利用
+
+2. ユーザー体験要件
+   - フォーム入力と即時バリデーション
+   - アニメーションやトランジション
+   - ドラッグ&ドロップ操作
+
+3. 状態管理の必要性
+   - 複雑なフォーム状態
+   - ユーザー入力の一時保存
+   - コンポーネント間の状態共有
+
+4. リアルタイム更新
+   - WebSocket接続
+   - ポーリング処理
+   - プッシュ通知
 
 ## 4. API Routes
 ### 使用箇所
