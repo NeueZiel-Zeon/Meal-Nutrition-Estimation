@@ -115,7 +115,8 @@ export async function POST(request: Request) {
             }
           ]
         }],
-        system: "あなたは食事の画像分析を行う栄養士アシスタントです。必ず指定されたJSON形式でのみ回答してください。説明文は含めないでください。"
+        system: `あなたは食事の画像分析を行う栄養士アシスタントです。必ず指定されたJSON形式でのみ回答してください。説明文は含めないでください。
+                推測した料理名から、画像では見えない部分の栄養素も推測してください。（例：牛丼の場合、写真では見えなくてもお米の栄養素も推測してください。）`
       });
 
       console.log('Claude Response:', JSON.stringify(response, null, 2));
